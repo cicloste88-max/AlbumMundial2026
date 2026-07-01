@@ -12,6 +12,8 @@ import { TEAMS, ORDER, FALTA, PREFIX, type Team } from '@/lib/teams';
 import { getStore, type InvMap, type Entry } from '@/lib/inventory';
 
 const store = getStore();
+const MAX_REPES = 5;
+const FLAG_BASE = 'https://cmyfyswystjgzdwbqyyb.supabase.co/storage/v1/object/public/flags/';
 const esc = (s: unknown) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -63,19 +65,19 @@ function pageHTML(t: Team, inv: InvMap): string {
     const tt = TEAMS[c]; const active = c === t.code;
     const bg = active ? tt.team : '#E7E3D6';
     const tcol = active ? (c === 'KOR' ? '#2C3576' : '#FFFFFF') : '#8A8474';
-    return `<button data-country="${c}" style="flex:1;border:none;cursor:pointer;border-radius:11px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;background:${bg};-webkit-tap-highlight-color:transparent;"><span style="width:22px;height:15px;border-radius:2px;background:${tt.flag};border:1px solid rgba(0,0,0,.14);"></span><span style="font-family:var(--font-fifa);font-size:12px;letter-spacing:.03em;color:${tcol};">${c}</span></button>`;
+    return `<button data-country="${c}" style="flex:1;border:none;cursor:pointer;border-radius:11px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;background:${bg};-webkit-tap-highlight-color:transparent;"><span style="width:22px;height:15px;border-radius:2px;overflow:hidden;border:1px solid rgba(0,0,0,.14);"><img src="${FLAG_BASE}${c}.png" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.visibility='hidden'"></span><span style="font-family:var(--font-fifa);font-size:12px;letter-spacing:.03em;color:${tcol};">${c}</span></button>`;
   }).join('');
 
   const groupChips = ORDER.map((c) => {
     const tt = TEAMS[c];
-    return `<div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.16);border-radius:8px;padding:5px 8px;"><span style="width:18px;height:12px;border-radius:2px;background:${tt.flag};border:1px solid rgba(255,255,255,.45);"></span><span style="font-family:var(--font-display);font-weight:800;font-size:11px;letter-spacing:.03em;">${c}</span></div>`;
+    return `<div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.16);border-radius:8px;padding:5px 8px;"><span style="width:18px;height:12px;border-radius:2px;overflow:hidden;border:1px solid rgba(255,255,255,.45);"><img src="${FLAG_BASE}${c}.png" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.visibility='hidden'"></span><span style="font-family:var(--font-display);font-weight:800;font-size:11px;letter-spacing:.03em;">${c}</span></div>`;
   }).join('');
 
   const grid = t.roster.map((r) => tileHTML(t, r, inv)).join('');
 
   return '' +
     `<div style="display:flex;gap:6px;padding:12px 14px 8px;position:sticky;top:0;z-index:20;background:#F4F1E6;">${tabs}</div>` +
-    `<div style="position:relative;padding:8px 18px 6px;overflow:hidden;"><div style="font-family:var(--font-fifa);font-size:30px;line-height:.84;color:${t.titleA};letter-spacing:.01em;">${PREFIX}</div><div style="font-family:var(--font-fifa);font-size:46px;line-height:.86;color:${t.titleB};letter-spacing:.005em;margin-top:1px;">${t.name}</div><div style="display:flex;align-items:center;gap:11px;margin-top:13px;"><div style="width:44px;height:31px;border-radius:5px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.22);flex-shrink:0;background:${t.flag};border:1px solid rgba(0,0,0,.10);"></div><div style="font-family:var(--font-display);font-weight:700;font-size:12.5px;line-height:1.22;color:${t.ink};">${t.fed}</div></div></div>` +
+    `<div style="position:relative;padding:8px 18px 6px;overflow:hidden;"><div style="font-family:var(--font-fifa);font-size:30px;line-height:.84;color:${t.titleA};letter-spacing:.01em;">${PREFIX}</div><div style="font-family:var(--font-fifa);font-size:46px;line-height:.86;color:${t.titleB};letter-spacing:.005em;margin-top:1px;">${t.name}</div><div style="display:flex;align-items:center;gap:11px;margin-top:13px;"><div style="width:44px;height:31px;border-radius:5px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.22);flex-shrink:0;border:1px solid rgba(0,0,0,.10);"><img src="${FLAG_BASE}${t.code}.png" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.visibility='hidden'"></div><div style="font-family:var(--font-display);font-weight:700;font-size:12.5px;line-height:1.22;color:${t.ink};">${t.fed}</div></div></div>` +
     `<div style="padding:12px 18px 4px;display:flex;align-items:center;gap:12px;"><div style="flex:1;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><span style="font-family:var(--font-display);font-weight:700;font-size:12px;letter-spacing:.02em;color:var(--ink-600);">Pegados ${got}/${total}</span><span style="font-family:var(--font-numeric);font-weight:800;font-size:13px;color:${t.ink};">${pct}%</span></div><div style="height:8px;border-radius:99px;background:rgba(0,0,0,.10);overflow:hidden;"><div style="height:100%;border-radius:99px;background:${t.team};transition:width .35s ease;width:${pct}%;"></div></div></div><div style="text-align:center;padding:5px 11px;border-radius:10px;background:rgba(227,6,19,.09);min-width:46px;"><div style="font-family:var(--font-numeric);font-weight:800;font-size:16px;color:#E30613;line-height:1;">${repeTotal}</div><div style="font-family:var(--font-display);font-weight:800;font-size:8px;letter-spacing:.10em;color:#E30613;margin-top:2px;">REPES</div></div><button data-reset style="border:none;background:rgba(0,0,0,.06);color:var(--ink-500);width:34px;height:34px;border-radius:10px;font-size:15px;cursor:pointer;flex-shrink:0;" title="Reiniciar esta página">↺</button></div>` +
     `<div style="display:flex;gap:15px;padding:8px 18px 12px;"><div style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;border:2px dashed #C5BFB0;"></span><span style="font-size:10px;color:var(--ink-400);font-weight:700;">Falta</span></div><div style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:${t.team};"></span><span style="font-size:10px;color:var(--ink-400);font-weight:700;">Tengo</span></div><div style="display:flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:#E30613;"></span><span style="font-size:10px;color:var(--ink-400);font-weight:700;">Repe</span></div><span style="margin-left:auto;font-size:10px;color:var(--ink-300);font-weight:600;">toca para cambiar</span></div>` +
     `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 14px;">${grid}</div>` +
@@ -114,7 +116,7 @@ export default function AlbumPage() {
       if (act) {
         ev.stopPropagation();
         const key = act.dataset.key!; const e = inv[key];
-        if (act.dataset.act === 'inc') apply(key, { state: 'repe', repes: (e?.repes ?? 0) + 1 });
+        if (act.dataset.act === 'inc') apply(key, { state: 'repe', repes: Math.min(MAX_REPES, (e?.repes ?? 0) + 1) });
         else { const r = Math.max(0, (e?.repes ?? 0) - 1); apply(key, r > 0 ? { state: 'repe', repes: r } : { state: 'tengo', repes: 0 }); }
         return;
       }
@@ -130,11 +132,13 @@ export default function AlbumPage() {
       const tile = target.closest('[data-tile]') as HTMLElement | null;
       if (tile) {
         const key = tile.dataset.key!; const e = inv[key];
-        const order: Record<string, 'tengo' | 'repe' | 'falta'> = { falta: 'tengo', tengo: 'repe', repe: 'falta' };
-        const next = order[e?.state ?? 'falta'];
-        if (next === 'falta') { apply(key, null); return; }
-        const repes = next === 'repe' ? Math.max(e?.repes ?? 0, 1) : (e?.repes ?? 0);
-        apply(key, { state: next, repes });
+        const st = (e?.state ?? 'falta') as 'falta' | 'tengo' | 'repe';
+        const repes = e?.repes ?? 0;
+        // falta -> tengo -> repe1 -> repe2 -> ... -> repe(MAX_REPES) -> falta
+        if (st === 'falta') apply(key, { state: 'tengo', repes: 0 });
+        else if (st === 'tengo') apply(key, { state: 'repe', repes: 1 });
+        else if (repes < MAX_REPES) apply(key, { state: 'repe', repes: repes + 1 });
+        else apply(key, null);
       }
     };
     el.addEventListener('click', onClick);
