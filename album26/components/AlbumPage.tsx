@@ -20,7 +20,7 @@ function tileHTML(t: Team, r: readonly [number, string, string], inv: InvMap): s
   const accent = num === 1 || num === 13;
   const key = t.code + '-' + num;
   const e: Entry | undefined = inv[key];
-  const state = e?.state ?? 'falta';
+  const state = (e?.state ?? 'falta') as 'falta' | 'tengo' | 'repe';
   const isFalta = state === 'falta';
   const isRepe = state === 'repe';
   const pal = isFalta ? FALTA
@@ -54,7 +54,7 @@ function pageHTML(t: Team, inv: InvMap): string {
   let got = 0, repeTotal = 0;
   for (const r of t.roster) {
     const e = inv[t.code + '-' + r[0]];
-    if (e && e.state !== 'falta') got++;
+    if (e) got++;
     if (e) repeTotal += e.repes || 0;
   }
   const pct = total ? Math.round((got / total) * 100) : 0;
