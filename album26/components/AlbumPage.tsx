@@ -122,7 +122,7 @@ export default function AlbumPage() {
       if (country) { setCur(country.dataset.country!); return; }
       if (target.closest('[data-reset]')) {
         if (confirm('¿Reiniciar el inventario de ' + TEAMS[cur].name + '?')) {
-          for (const k of Object.keys(inv)) store.put(k, null);
+          store.clear(cur);
           setInv({});
         }
         return;

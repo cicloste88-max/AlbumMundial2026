@@ -10,6 +10,7 @@ export type InvMap = Record<string, Entry>; // { 'MEX-2': {state,repes}, ... }
 export interface InventoryStore {
   loadCountry(code: string): Promise<InvMap>;
   put(sticker: string, entry: Entry | null): Promise<void>; // null = borrar (= 'falta')
+  clear(code: string): Promise<void>; // borra TODO el país de una vez (reset)
 }
 
 // ---------- F0: LocalStorage (1 dispositivo, sin login) ----------
@@ -24,6 +25,9 @@ export class LocalStore implements InventoryStore {
     const map = await this.loadCountry(code);
     if (entry) map[sticker] = entry; else delete map[sticker];
     try { localStorage.setItem(this.key(code), JSON.stringify(map)); } catch {}
+  }
+  async clear(code: string): Promise<void> {
+    try { localStorage.removeItem(this.key(code)); } catch {}
   }
 }
 
@@ -52,6 +56,12 @@ export class SupabaseStore implements InventoryStore {
     } else {
       await supabase.from('inventory').delete().eq('sticker', sticker);
     }
+  }
+  async clear(code: string): Promise<void> {
+    const { data: u } = await supabase.auth.getUser();
+    const user_id = u.user?.id;
+    if (!user_id) return;
+    await supabase.from('inventory').delete().eq('user_id', user_id).like('sticker', code + '-%');
   }
 }
 */
