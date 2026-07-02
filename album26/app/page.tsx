@@ -1,5 +1,5 @@
-import AlbumPage from '@/components/AlbumPage';
+import AlbumBook from '@/components/AlbumBook';
 
 export default function Page() {
-  return <AlbumPage />;
+  return <AlbumBook />;
 }
