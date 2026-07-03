@@ -27,6 +27,10 @@ for (const c of ORDER) (GRUPOS[ALBUM_TEAMS[c].grupo] ||= []).push(c);
 
 const K = (t: string, n: number) => t + '-' + n;
 const sheetOf = (code: string) => 2 + ORDER.indexOf(code) * 2;
+// Vistas (desktop spread): [0]=portada [1]=grupos [2..49]=48 pliegos L|R
+const TOTAL_VIEWS = 2 + ORDER.length; // 50
+const viewOfPage = (p: number) => (p < 2 ? p : 2 + Math.floor((p - 2) / 2));
+const pageOfView = (v: number) => (v < 2 ? v : 2 + (v - 2) * 2);
 const themeStyle = (c: string) => {
   const p = PALETAS[c];
   return '--frame:' + p.frame + ';--deep:' + p.deep + ';--head:' + p.head;
@@ -230,6 +234,27 @@ const CSS = `:root{
 /* --- app: boton reset de la barra de estado (chrome, no es de la referencia) --- */
 .demo-bar .rst{border:0; border-radius:8px; padding:4px 10px; margin-left:8px; background:#2E2350; color:#CFC5EE;
      font-family:inherit; font-weight:700; font-size:11.5px; cursor:pointer}
+
+/* --- app Fv3.2: modo SPREAD en desktop (>=900px). Solo layout/orquestación;
+       builders y CSS de página de la referencia intactos. En spread cada vista
+       renderiza sus 1-2 páginas (sin dorso fantasma) y --w pasa a ser el ancho
+       real de UNA página para que las tipografías calc(var(--w)*x) escalen. --- */
+@media (min-width:900px){
+  .ab-wrap{justify-content:center; --sw:min(92vw, calc(86vh * 2016 / 1204))}
+  .nav{width:var(--sw)}
+  .demo-bar{width:var(--sw)}
+}
+.stage{display:flex; flex-direction:column; align-items:center; width:100%}
+.view.spread{position:relative; width:var(--sw); aspect-ratio:2016/1204; display:flex;
+     --w:calc(var(--sw) / 2); filter:drop-shadow(0 14px 26px rgba(0,0,0,.5)); touch-action:pan-y}
+.view.spread.single{justify-content:center}
+.spage{position:relative; flex:1; min-width:0; background:var(--paper); overflow:hidden}
+.spage.l{border-radius:5px 0 0 5px}
+.spage.r{border-radius:0 5px 5px 0}
+.spage.solo{flex:0 0 50%; border-radius:5px}
+.view.spread .spine{position:absolute; left:50%; top:0; bottom:0; width:22px; transform:translateX(-50%);
+     pointer-events:none; z-index:60;
+     background:linear-gradient(90deg, transparent, rgba(0,0,0,.20) 42%, rgba(0,0,0,.30) 50%, rgba(0,0,0,.20) 58%, transparent)}
 `;
 
 // ---------- estado visual de un cromo ----------
@@ -351,8 +376,9 @@ function pageHTML(p: number, invs: Record<string, InvMap>): string {
   return (p - 2) % 2 === 0 ? pageEquipoL(code, inv) : pageEquipoR(code, inv);
 }
 
-function navHTML(page: number): string {
+function navHTML(page: number, isDesktop: boolean): string {
   const on = (t: number) => page === t || (page === t + 1 && t >= 2);
+  const atEnd = isDesktop ? viewOfPage(page) === TOTAL_VIEWS - 1 : page === TOTAL_PAGES - 1;
   const chips = ORDER.map((c) => {
     const t = sheetOf(c);
     return '<button' + (on(t) ? ' class="on"' : '') + ' data-goto="' + t + '">' + c + '</button>';
@@ -362,8 +388,33 @@ function navHTML(page: number): string {
     + '<button class="fix' + (on(0) ? ' on' : '') + '" data-goto="0">PORTADA</button>'
     + '<button class="fix' + (on(1) ? ' on' : '') + '" data-goto="1">GRUPOS</button>'
     + '<div class="chips" id="chips">' + chips + '</div>'
-    + '<button class="fix arrow" data-nav="next"' + (page === TOTAL_PAGES - 1 ? ' disabled' : '') + '>›</button>'
+    + '<button class="fix arrow" data-nav="next"' + (atEnd ? ' disabled' : '') + '>›</button>'
     + '</div>';
+}
+
+// Desktop: vista = pliego completo (L|R) o página única (portada/grupos)
+function spreadViewHTML(v: number, invs: Record<string, InvMap>, current: boolean): string {
+  if (v < 0 || v >= TOTAL_VIEWS) return '';
+  let inner: string;
+  if (v === 0) inner = '<div class="spage solo">' + pagePortada() + '</div>';
+  else if (v === 1) inner = '<div class="spage solo">' + pageGrupos() + '</div>';
+  else {
+    const code = ORDER[v - 2];
+    const inv = invs[code] || {};
+    inner = '<div class="spage l">' + pageEquipoL(code, inv) + '</div>'
+      + '<div class="spage r">' + pageEquipoR(code, inv) + '</div>'
+      + '<div class="spine"></div>';
+  }
+  return '<div class="view spread' + (v < 2 ? ' single' : '') + '" data-view="' + v + '"'
+    + (current ? ' data-current="1"' : ' style="display:none"') + '>' + inner + '</div>';
+}
+
+function stageHTML(page: number, invs: Record<string, InvMap>): string {
+  // lazy mount por vista: actual ±1
+  const v = viewOfPage(page);
+  let out = '';
+  for (let q = v - 1; q <= v + 1; q++) out += spreadViewHTML(q, invs, q === v);
+  return '<div class="stage">' + out + '</div>';
 }
 
 function statusHTML(page: number, invs: Record<string, InvMap>): string {
@@ -407,6 +458,16 @@ export default function AlbumBook() {
   const swipedRef = useRef(false);
   const [page, setPage] = useState(0);
   const [invs, setInvs] = useState<Record<string, InvMap>>({});
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // breakpoint spread: re-render limpio al cruzar 900px
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 900px)');
+    const apply = () => setIsDesktop(mq.matches);
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   // fallback de bandera de la referencia (global usado por onerror inline)
   useEffect(() => {
@@ -444,21 +505,25 @@ export default function AlbumBook() {
     store.put(key, entry);
   }, []);
 
-  // render por innerHTML (patrón Fv3)
+  // render por innerHTML (patrón Fv3); desktop = spread por vistas, móvil = libro
   useEffect(() => {
     const el = ref.current; if (!el) return;
     el.innerHTML = SYMBOLS + '<style>' + CSS + '</style>'
-      + navHTML(page) + bookHTML(page, invs) + statusHTML(page, invs);
+      + navHTML(page, isDesktop)
+      + (isDesktop ? stageHTML(page, invs) : bookHTML(page, invs))
+      + statusHTML(page, invs);
     // centrar el chip activo
     const chips = el.querySelector('#chips') as HTMLElement | null;
     const onChip = chips?.querySelector('.on') as HTMLElement | null;
     if (chips && onChip) chips.scrollLeft = onChip.offsetLeft - chips.clientWidth / 2 + onChip.clientWidth / 2;
-  }, [page, invs]);
+  }, [page, invs, isDesktop]);
 
-  // delegación de eventos + swipe
+  // delegación de eventos + swipe (móvil: hojas · desktop: vistas + teclado + drag)
   useEffect(() => {
     const el = ref.current; if (!el) return;
     const nav = (p: number) => setPage(Math.max(0, Math.min(TOTAL_PAGES - 1, p)));
+    const goView = (v: number) => setPage(pageOfView(Math.max(0, Math.min(TOTAL_VIEWS - 1, v))));
+    const step = (dir: number) => { if (isDesktop) goView(viewOfPage(page) + dir); else nav(page + dir); };
     const onClick = (ev: MouseEvent) => {
       if (swipedRef.current) return;
       const target = ev.target as HTMLElement;
@@ -477,7 +542,7 @@ export default function AlbumBook() {
         return;
       }
       const navBtn = target.closest('[data-nav]') as HTMLElement | null;
-      if (navBtn) { nav(page + (navBtn.dataset.nav === 'next' ? 1 : -1)); return; }
+      if (navBtn) { step(navBtn.dataset.nav === 'next' ? 1 : -1); return; }
       const goto = target.closest('[data-goto]') as HTMLElement | null;
       if (goto) { nav(parseInt(goto.dataset.goto!, 10)); return; }
       const reset = target.closest('[data-reset]') as HTMLElement | null;
@@ -503,6 +568,7 @@ export default function AlbumBook() {
         else apply(key, null);
       }
     };
+    // móvil: swipe táctil por hojas (comportamiento Fv3.1 intacto)
     let touchX = 0, touchY = 0;
     const onTouchStart = (ev: TouchEvent) => {
       touchX = ev.touches[0].clientX; touchY = ev.touches[0].clientY;
@@ -516,15 +582,43 @@ export default function AlbumBook() {
         nav(dx < 0 ? page + 1 : page - 1);
       }
     };
+    // desktop: teclado + drag (pointer) por vistas, solo sobre el stage
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'ArrowRight') step(1);
+      else if (ev.key === 'ArrowLeft') step(-1);
+    };
+    let pX = 0, pY = 0, pOn = false;
+    const onPointerDown = (ev: PointerEvent) => {
+      if (!(ev.target as HTMLElement).closest('.stage')) { pOn = false; return; }
+      pOn = true; pX = ev.clientX; pY = ev.clientY;
+    };
+    const onPointerUp = (ev: PointerEvent) => {
+      if (!pOn) return; pOn = false;
+      const dx = ev.clientX - pX, dy = ev.clientY - pY;
+      if (Math.abs(dx) > 55 && Math.abs(dy) < 70) {
+        swipedRef.current = true;
+        setTimeout(() => { swipedRef.current = false; }, 350);
+        step(dx < 0 ? 1 : -1);
+      }
+    };
     el.addEventListener('click', onClick);
-    el.addEventListener('touchstart', onTouchStart, { passive: true });
-    el.addEventListener('touchend', onTouchEnd, { passive: true });
+    if (isDesktop) {
+      window.addEventListener('keydown', onKey);
+      el.addEventListener('pointerdown', onPointerDown);
+      el.addEventListener('pointerup', onPointerUp);
+    } else {
+      el.addEventListener('touchstart', onTouchStart, { passive: true });
+      el.addEventListener('touchend', onTouchEnd, { passive: true });
+    }
     return () => {
       el.removeEventListener('click', onClick);
+      window.removeEventListener('keydown', onKey);
+      el.removeEventListener('pointerdown', onPointerDown);
+      el.removeEventListener('pointerup', onPointerUp);
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [page, invs, apply]);
+  }, [page, invs, apply, isDesktop]);
 
   return <div ref={ref} className="ab-wrap" id="app" />;
 }
