@@ -112,6 +112,38 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   qa/screenshots/fv34/. fv31 (selectores .gtile/.gband) y fv33 (+check CZE → 18)
   actualizadas. 15/15 + 18/18 + 57/57 + 24/24.
 
+## Fv3.5 — Banderas w640 con cache-bust + layout móvil quali/GROUP + QA geométrico
+
+- **Cache-bust**: los PNG del bucket eran iconos circulares (causa raíz de los
+  "círculos" del gate); San los sustituyó por rectangulares w640 (flagcdn) en el mismo
+  path. `FLAGS_VERSION='2'` y `FLAG()` emite `flags/CODE.png?v=2` (todos los usos pasan
+  por esa única función: header, tiles de grupo, índice de grupos). SUI es 1:1 de
+  origen: con object-fit cover en 3:2 se recorta — correcto, no se "arregla".
+- **GROUP en una línea**: `.gt` con nowrap + font `.038*--w` + line-height 1.1
+  (antes `.05` partía "GROUP"/"X"). Como las proporciones son idénticas en todos los
+  modos (todo escala con `--w`), el título también se partía en desktop (visible en el
+  gate Fv3.4 aprobado); el fix aplica global y desktop queda en una línea.
+- **Layout móvil (<900px)**: descubierto que la página L desbordaba en vertical
+  (HAI: +44px TAMBIÉN en desktop — la salvaguarda de fitHeaders se rendía a las 6
+  iteraciones, suelo 0.69×, insuficiente con país corto a wordmark pleno + fed de 3
+  líneas): quali recortada y pill pisando la tabla. Fixes:
+  - `.roadto` en columna (rótulo arriba): el rótulo se compone con `<span>` por palabra
+    — desktop los apila (display:block, las 4 líneas de la referencia byte-intactas) y
+    móvil los fluye en UNA línea legible (`.028*--w`, nowrap).
+  - Reserva inferior del pill: `.inner{padding-bottom:.062*--w}` y la salvaguarda de
+    fitHeaders en móvil mide contra el borde de CONTENIDO (scrollHeight satura en el
+    padding-box y dejaba al contenido comerse la reserva).
+  - Compactación móvil para caber (≈30px): bandera del header `.29→.22*--w`, márgenes
+    weare/fed, rtable/rrow más prietos. Tope de la salvaguarda 6→14 iteraciones
+    (las páginas que caben no entran al bucle y quedan idénticas).
+- **QA geométrico** (`qa/verify-fv35-geo.mjs`, 360×740, HAI/CZE/PAN, 24 checks): sin
+  solapes par a par (tolerancia 2px; `.bg` decorativos excluidos: sangran a propósito
+  bajo overflow:hidden), GROUP 1 línea, sin desborde horizontal (.inner y documento),
+  banderas `naturalWidth>=600` + TODAS las URLs con `?v=2`. Las requests de `flags/` se
+  interceptan con un fixture PNG w640 canvas (sandbox sin red a supabase.co): valida el
+  mecanismo; el CDN real se valida en prod. Regresión: 24/24 + 57/57 + 24/24 + 18/18 +
+  15/15 (screenshots del gate fv34 regenerados: GROUP a una línea).
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

@@ -10,7 +10,8 @@
     "qa:movil": "node qa/verify-fv31-movil.mjs",
     "qa:spread": "node qa/verify-fv32-spread.mjs",
     "qa:verif": "node qa/verify-fv33-verif.mjs",
-    "qa:visual": "node qa/verify-fv34-visual.mjs"
+    "qa:visual": "node qa/verify-fv34-visual.mjs",
+    "qa:geo": "node qa/verify-fv35-geo.mjs"
   },
   "dependencies": {
     "next": "16.2.9",

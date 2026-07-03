@@ -80,4 +80,5 @@ docs/                     BUILD-PLAN original, log de decisiones, pendientes
 | Fv3.2 spread desktop + centrado | ✅ | `933b66b` |
 | Fv3.3 datos verificados 48 (fed/mlang/partidos/quali) | ✅ | ver `git log` |
 | Fv3.4 bloque GROUP tiles + header wordmark/fed + fix CZE | ✅ | ver `git log` |
+| Fv3.5 banderas w640 `?v=2` + layout móvil quali/GROUP + QA geo | ✅ | ver `git log` |
 | F1 Supabase auth+sync · F4 PWA · req #2 imágenes | ⏸ pendientes | — |

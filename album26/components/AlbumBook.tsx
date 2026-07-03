@@ -18,7 +18,10 @@ import { getStore, type InvMap, type Entry } from '@/lib/inventory';
 const store = getStore();
 const MAX_REPES = 5;
 const FLAG_BASE = 'https://cmyfyswystjgzdwbqyyb.supabase.co/storage/v1/object/public/flags/';
-const FLAG = (c: string) => FLAG_BASE + c + '.png';
+// Fv3.5: los PNG del bucket pasaron de iconos circulares a rectangulares w640;
+// la versión invalida la caché del CDN (hasta 1h sirviendo los viejos).
+const FLAGS_VERSION = '2';
+const FLAG = (c: string) => FLAG_BASE + c + '.png?v=' + FLAGS_VERSION;
 const TOTAL_PAGES = 2 + ORDER.length * 2; // 98
 
 // GRUPOS derivado de ALBUM_TEAMS — idéntico a la constante GRUPOS de la referencia
@@ -283,6 +286,34 @@ const CSS = `:root{
      border:calc(var(--w)*.006) solid #fff; border-radius:4px; box-shadow:0 2px 6px rgba(0,0,0,.18)}
 .fed .fname{font-weight:800; color:var(--hd1); font-size:calc(var(--w)*.019); line-height:1.15; text-align:left;
      flex:1; min-width:0; max-height:calc(var(--w)*.19); overflow:hidden}
+
+/* --- app Fv3.5: título GROUP en una línea + layout móvil quali/pill.
+       El rótulo ROAD TO se compone con <span> por palabra: en desktop se apilan
+       (display:block = las 4 líneas de la referencia) y en móvil fluyen en línea.
+       Las proporciones son idénticas en todos los modos (todo escala con --w),
+       así que el ajuste del título GROUP aplica global. --- */
+.gbadge .gt{white-space:nowrap; font-size:calc(var(--w)*.038); line-height:1.1}
+.roadto .rt span{display:block}
+@media (max-width:899.98px){
+  /* el pill de página es absolute: reservar franja inferior para que nunca pise contenido
+     (fitHeaders respeta esta reserva en móvil midiendo contra el borde de contenido) */
+  .inner{padding-bottom:calc(var(--w)*.062)}
+  /* header compactado: en la hoja móvil (20 cromos + quali) la bandera al 29%
+     y los márgenes de desktop no dejan sitio al panel de qualifiers */
+  .weare{margin:1% 0 2% 2%}
+  .fed{margin:1% 0 1% 2%}
+  .fed img{width:calc(var(--w)*.22)}
+  .fed .noflag{flex-basis:calc(var(--w)*.22); width:calc(var(--w)*.22)}
+  .fed .fname{max-height:calc(var(--w)*.15)}
+  /* panel QUALIFIERS en flujo de columna: rótulo arriba, legible y en una línea,
+     tabla compactada para caber junto a header+20 cromos en la hoja móvil */
+  .roadto{flex-direction:column; align-items:stretch; gap:calc(var(--w)*.008); padding:2% 1% 0}
+  .roadto .rt{font-size:calc(var(--w)*.028); line-height:1.15; white-space:nowrap}
+  .roadto .rt span{display:inline}
+  .roadto .rtable{padding:1.5% 3%}
+  .roadto .rh{margin-bottom:1.5%}
+  .roadto .rrow{padding:.6% 0}
+}
 `;
 
 // ---------- estado visual de un cromo ----------
@@ -344,7 +375,7 @@ function pageEquipoL(code: string, inv: InvMap): string {
     + fed + '</div>' + tileHTML(code, 1, inv) + tileHTML(code, 2, inv) + '</div>'
     + '<div class="row-gap"></div><div class="grid">' + [3, 4, 5, 6].map((n) => tileHTML(code, n, inv)).join('') + '</div>'
     + '<div class="row-gap"></div><div class="grid">' + [7, 8, 9, 10].map((n) => tileHTML(code, n, inv)).join('') + '</div>'
-    + '<div class="roadto"><div class="rt">ROAD TO<br>FIFA<br>WORLD<br>CUP 2026</div>'
+    + '<div class="roadto"><div class="rt"><span>ROAD TO</span> <span>FIFA</span> <span>WORLD</span> <span>CUP 2026</span></div>'
     + '<div class="rtable"><div class="rh">QUALIFIERS</div>' + quali + '</div></div>'
     + '<div class="pageno">' + T.pagina + ' · ' + code + '</div></div></div>';
 }
@@ -512,10 +543,23 @@ function fitHeaders(root: HTMLElement) {
       }
     }
     l1.style.fontSize = fs * 0.63 + 'px';
-    // salvaguarda: la página no debe desbordar en vertical
+    // salvaguarda: la página no debe desbordar en vertical. Fv3.5: tope 6→14
+    // iteraciones — países cortos ("HAITI") no se encogen por ancho y con fed de
+    // 3 líneas el suelo 0.69× no bastaba (quali recortada pisando el pill).
+    // Las páginas que ya caben no entran al bucle y quedan idénticas.
+    // En móvil el límite es el borde de CONTENIDO (scrollHeight satura en el
+    // padding-box y dejaría al contenido comerse la reserva del pill).
     const inner = w.closest('.inner') as HTMLElement | null;
     if (inner) {
-      for (let i = 0; i < 6 && inner.scrollHeight > inner.clientHeight + 2; i++) {
+      const mobile = window.matchMedia('(max-width: 899.98px)').matches;
+      const over = () => {
+        if (!mobile) return inner.scrollHeight > inner.clientHeight + 2;
+        const last = inner.querySelector('.roadto, .matches');
+        if (!last) return inner.scrollHeight > inner.clientHeight + 2;
+        const pad = parseFloat(getComputedStyle(inner).paddingBottom) || 0;
+        return last.getBoundingClientRect().bottom > inner.getBoundingClientRect().bottom - pad + 2;
+      };
+      for (let i = 0; i < 14 && over(); i++) {
         fs *= 0.94;
         l2.style.fontSize = fs + 'px';
         l1.style.fontSize = fs * 0.63 + 'px';

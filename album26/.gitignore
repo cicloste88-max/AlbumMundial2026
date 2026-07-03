@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+# salida transitoria de las suites QA (QA_OUT); los shots del gate van en qa/screenshots/
+/qa-shots/
 
 # next.js
 /.next/

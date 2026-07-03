@@ -40,6 +40,16 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
   centrado (márgenes simétricos), aspect 2016/1204, footers de paginación real, sin
   dorso, lazy por vistas ±1, navegación por vistas (chips/flechas/teclado/drag), estados
   y persistencia en spread, y cambio a 390px con la misma clave de storage.
+- **verify-fv33-verif.mjs** (viewport 1280×800): datos verificados de las 48 selecciones
+  (fed/mlang/partidos/quali del GT del brief) y placeholders sin inventar (SCO/IRN/GER).
+- **verify-fv34-visual.mjs** (viewport 1280×800): bloque GROUP con tiles 2×2 sin
+  círculos, header L (jerarquía país>WE ARE, bandera 29%, fed sin recortes) y
+  screenshots del gate en `qa/screenshots/fv34/`.
+- **verify-fv35-geo.mjs** (viewport 360×740, modo móvil): QA geométrico — sin solapes
+  entre bloques (tolerancia 2px, incl. pill de página), "GROUP {X}" en una línea, sin
+  desborde horizontal y banderas con `?v=2` y `naturalWidth >= 600` en HAI/CZE/PAN.
+  Las requests de `flags/` se interceptan con un PNG fixture w640 (el sandbox no llega
+  a supabase.co); la validación contra el CDN real se hace en prod.
 
 ## Notas
 
