@@ -23,8 +23,10 @@ Placeholders en la app hasta que llegue payload nuevo (NO inventar):
   álbum; BC Place → "BC Place Vancouver".
 
 ## Requisito #2 — imágenes de cromos recortadas: **PAUSADO**
-No añadir nada de recorte hasta que se reactive. El markup ya deja el hueco
-(`img.imgslot` dentro de `.sticker .art`, display:none).
+No añadir nada de recorte hasta que se reactive. Desde Fv3.6 la `img.imgslot` NO se
+emite (una `<img>` sin src audita como rota — 9 en portada por las hojas vecinas
+montadas): cuando el requisito traiga URLs reales, `tileHTML` debe emitir la `<img>`
+solo con src válido (el CSS `.imgslot` sigue en su sitio).
 
 ## F1 — Supabase (multidispositivo, login Google): pendiente
 - `supabase/schema.sql` listo (tabla `inventory` + RLS + trigger updated_at). SIN aplicar.
@@ -32,10 +34,13 @@ No añadir nada de recorte hasta que se reactive. El markup ya deja el hueco
   `getStore()`. Requiere gates humanos: proyecto Supabase, `.env.local`, OAuth Google.
 - Migración prevista: primer login sube claves `album26_*` de localStorage (idempotente).
 
-## F4 — PWA: parcial
-- `manifest.webmanifest` y `sw.js` están en `public/` pero el **service worker no se
-  registra** todavía; faltan iconos `public/icons/icon-192.png` y `icon-512.png` (los
-  aporta San o se generan del "26").
+## F4 — PWA: ✅ instalable desde Fv3.6
+- Manifest completo (name/short_name/display standalone/colores `#1E1B33`), iconos
+  192/512 servidos desde el bucket (`flags/icons/…`, URLs absolutas, subidos por San),
+  SW mínimo (cache-first `/_next/static`, network-first documento, banderas fuera)
+  registrado solo en producción, meta iOS (apple-touch-icon + capable).
+- Pendiente menor: validar la instalación real en un móvil (gate de San) y decidir si
+  se quiere pantalla offline dedicada (hoy: fallback a caché del documento).
 
 ## UI / visual
 - **Animación de paso de vistas** (desktop spread): hoy es instantánea. Opción acordada

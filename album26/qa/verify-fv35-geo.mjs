@@ -19,7 +19,8 @@ const results = [];
 const ok = (n, c, x='') => { results.push([c?'PASS':'FAIL', n, x]); console.log((c?'PASS':'FAIL')+'  '+n+(x?'  ['+x+']':'')); if(!c) process.exitCode=1; };
 
 const b = await chromium.launch({ executablePath: EXE });
-const ctx = await b.newContext({ viewport: { width: 360, height: 740 }, deviceScaleFactor: 2, hasTouch: true });
+// serviceWorkers:'block': desde Fv3.6 hay SW en prod y podría saltarse page.route
+const ctx = await b.newContext({ viewport: { width: 360, height: 740 }, deviceScaleFactor: 2, hasTouch: true, serviceWorkers: 'block' });
 
 // fixture PNG 640x427 (rectangular, como los w640 del bucket) generado con canvas
 const fixPage = await ctx.newPage();
@@ -73,7 +74,8 @@ const pageChecks = (extraSel) => p.evaluate(({ tol, extraSel }) => {
   const overlaps = [];
   for (let i = 0; i < blocks.length; i++) for (let j = i + 1; j < blocks.length; j++) {
     const a = blocks[i], b = blocks[j];
-    if (a.within === b.name || b.within === a.name) continue; // contención por diseño
+    // contención por diseño (prefijo: la fila del grupo es "grid.ggrp" desde Fv3.6)
+    if ((a.within && b.name.startsWith(a.within)) || (b.within && a.name.startsWith(b.within))) continue;
     const ox = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
     const oy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
     if (ox > tol && oy > tol) overlaps.push(`${a.name} ∩ ${b.name} (${ox.toFixed(1)}x${oy.toFixed(1)})`);

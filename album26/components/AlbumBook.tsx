@@ -22,6 +22,12 @@ const FLAG_BASE = 'https://cmyfyswystjgzdwbqyyb.supabase.co/storage/v1/object/pu
 // la versión invalida la caché del CDN (hasta 1h sirviendo los viejos).
 const FLAGS_VERSION = '2';
 const FLAG = (c: string) => FLAG_BASE + c + '.png?v=' + FLAGS_VERSION;
+// Fv3.6: modo de encaje de las banderas en los tiles del bloque GROUP.
+//  'cover43' = zona de bandera 4:3 + object-fit cover (recorte lateral <=11% en
+//              las 3:2, 0% en las 4:3) — modo activo.
+//  'fillsq'  = alternativa fiel-imprenta: tile cuasi-cuadrado + object-fit fill
+//              (deformación leve como el álbum impreso). NO activar sin gate de San.
+const GROUP_FIT: 'cover43' | 'fillsq' = 'cover43';
 const TOTAL_PAGES = 2 + ORDER.length * 2; // 98
 
 // GRUPOS derivado de ALBUM_TEAMS — idéntico a la constante GRUPOS de la referencia
@@ -314,6 +320,30 @@ const CSS = `:root{
   .roadto .rh{margin-bottom:1.5%}
   .roadto .rrow{padding:.6% 0}
 }
+
+/* --- app Fv3.6: bloque GROUP re-proporcionado. La fila del grupo (.ggrp) da al
+       bloque un carril propio: ~40% del ancho de página en móvil, ~35% en desktop
+       (gate fv35: los tiles verticales + cover recortaban los laterales de las
+       banderas w640 y el bloque salía enorme). Zona de bandera 4:3 fija + cover
+       (recorte lateral <=11% en banderas 3:2, 0% en 4:3), banda de código al 20%,
+       tile resultante ~1.66. Los tiles 18-20 de la fila absorben el resto. --- */
+.grid.ggrp{grid-template-columns:var(--gbw) 1fr 1fr 1fr; --gbw:calc(var(--w)*.40)}
+@media (min-width:900px){ .grid.ggrp{--gbw:calc(var(--w)*.35)} }
+.grid.ggrp .tile{align-self:start}
+.gbadge{padding:2% 0 0}
+.gbadge .gt{margin-bottom:calc(var(--gbw)*.05)}
+.gtiles{flex:0 0 auto; min-height:auto; margin-top:0; gap:calc(var(--gbw)*.06); grid-auto-rows:auto}
+/* la banda va en absolute: si fuera flex item, su texto vertical estira el tile
+   por encima del alto 4:3 de la bandera y deforma la zona (stretch del cross-axis) */
+.gtile{display:block; position:relative}
+.gtile .gband{position:absolute; left:0; top:0; bottom:0; width:20%; flex:none; font-size:calc(var(--gbw)*.055)}
+.gtile .noflag{font-size:calc(var(--gbw)*.06)}
+.gbadge.cover43 .gtile img{display:block; margin-left:20%; width:80%; height:auto; aspect-ratio:4/3; object-fit:cover; flex:none}
+.gbadge.cover43 .gtile .noflag{display:flex; margin-left:20%; width:80%; aspect-ratio:4/3; flex:none}
+/* alternativa fiel-imprenta (GROUP_FIT='fillsq', NO activa): tile cuasi-cuadrado
+   con object-fit fill — deformación leve como el álbum impreso */
+.gbadge.fillsq .gtile img{display:block; margin-left:20%; width:80%; height:auto; aspect-ratio:5/6; object-fit:fill; flex:none}
+.gbadge.fillsq .gtile .noflag{display:flex; margin-left:20%; width:80%; aspect-ratio:5/6; flex:none}
 `;
 
 // ---------- estado visual de un cromo ----------
@@ -342,7 +372,9 @@ function tileHTML(code: string, n: number, inv: InvMap): string {
   return '<div class="tile" data-tile="' + k + '" data-state="' + ds + '">'
     + '<svg class="g g2"><use href="#g2"/></svg><svg class="g g6"><use href="#g6"/></svg>'
     + '<div class="code">' + code + '<br>' + n + '</div><div class="pname">' + name + '</div>'
-    + '<div class="sticker"><div class="art"><img class="imgslot" alt="">'
+    // Fv3.6: sin <img class="imgslot"> vacía — se emitirá solo cuando el req #2
+    // (imágenes de cromos) traiga una URL real; una <img> sin src audita como rota
+    + '<div class="sticker"><div class="art">'
     + '<div class="sc">' + code + ' ' + n + '</div><div class="sn2">' + r[1] + '</div></div></div>'
     + '<div class="badge-rep">' + badge + '</div>'
     + '<div class="step"><button data-act="minus" data-k="' + k + '">−</button>'
@@ -391,8 +423,8 @@ function pageEquipoR(code: string, inv: InvMap): string {
     + '<div class="grid" style="margin-top:1.5%">' + tileHTML(code, 11, inv) + tileHTML(code, 12, inv)
     + '<div class="crestwrap">' + photoHTML(code, inv) + '<div class="mlang' + (V.mlang ? '' : ' solo') + '">' + mlang + '</div></div></div>'
     + '<div class="row-gap"></div><div class="grid">' + [14, 15, 16, 17].map((n) => tileHTML(code, n, inv)).join('') + '</div>'
-    + '<div class="row-gap"></div><div class="grid">'
-    + '<div class="gbadge"><div class="gt">GROUP ' + T.grupo + '</div><div class="gtiles">'
+    + '<div class="row-gap"></div><div class="grid ggrp">'
+    + '<div class="gbadge ' + GROUP_FIT + '"><div class="gt">GROUP ' + T.grupo + '</div><div class="gtiles">'
     + GRUPOS[T.grupo].map((c) => '<div class="gtile' + (c === code ? ' me' : '') + '" data-goto="' + sheetOf(c) + '"><span class="gband">' + c + '</span><img src="' + FLAG(c) + '" alt="' + c + '" loading="lazy" onerror="flagErr(this)"></div>').join('')
     + '</div></div>' + [18, 19, 20].map((n) => tileHTML(code, n, inv)).join('') + '</div>'
     + '<div class="matches">' + partidos.map((m) => '<div class="match"><div class="pitch"></div><div class="mi">'

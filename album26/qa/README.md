@@ -50,6 +50,11 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
   desborde horizontal y banderas con `?v=2` y `naturalWidth >= 600` en HAI/CZE/PAN.
   Las requests de `flags/` se interceptan con un PNG fixture w640 (el sandbox no llega
   a supabase.co); la validación contra el CDN real se hace en prod.
+- **verify-fv36-pwa.mjs** (360×740 + 1280×800): PWA instalable (manifest 200 con
+  iconos absolutos del bucket que cargan, SW registrado en prod-build), bloque GROUP
+  ≤42% del ancho de página con zona de bandera 4:3 (ratio 1.30-1.36) y banda 20%,
+  cero `<img>` con src vacío en portada/índice. Screenshots en `qa/screenshots/fv36/`.
+  Los contextos con `page.route` usan `serviceWorkers:'block'`.
 
 ## Notas
 

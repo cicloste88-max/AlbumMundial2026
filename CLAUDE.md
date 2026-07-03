@@ -36,7 +36,8 @@ album26/                  la app (Root Directory en Vercel)
 │   ├── album-data.ts     GENERADO desde build_handoff k=album-data-v3 — NO editar a mano
 │   ├── inventory.ts      persistencia conmutable (LocalStore F0 / SupabaseStore F1)
 │   └── teams.ts          LEGACY (datos F0 Grupo A)
-├── public/fonts/fwc26.otf · manifest.webmanifest · sw.js (F4, SW aún sin registrar)
+├── public/fonts/fwc26.otf · manifest.webmanifest · sw.js (Fv3.6: PWA instalable,
+│                         SW registrado solo en prod, iconos 192/512 en bucket flags/icons/)
 ├── qa/                   suites Playwright versionadas (ver qa/README.md)
 └── supabase/schema.sql   F1 (tabla inventory + RLS) — AÚN SIN USAR
 docs/                     BUILD-PLAN original, log de decisiones, pendientes
@@ -81,4 +82,5 @@ docs/                     BUILD-PLAN original, log de decisiones, pendientes
 | Fv3.3 datos verificados 48 (fed/mlang/partidos/quali) | ✅ | ver `git log` |
 | Fv3.4 bloque GROUP tiles + header wordmark/fed + fix CZE | ✅ | ver `git log` |
 | Fv3.5 banderas w640 `?v=2` + layout móvil quali/GROUP + QA geo | ✅ | ver `git log` |
-| F1 Supabase auth+sync · F4 PWA · req #2 imágenes | ⏸ pendientes | — |
+| Fv3.6 tiles GROUP 4:3 a escala + PWA instalable + fix img vacías | ✅ | ver `git log` |
+| F1 Supabase auth+sync · req #2 imágenes | ⏸ pendientes | — |

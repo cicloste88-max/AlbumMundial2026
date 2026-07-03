@@ -1,34 +1,43 @@
-// F4 · Service worker mínimo: cachea el shell para que la app abra offline.
-const CACHE = 'album26-v1';
-const SHELL = ['/', '/fonts/fwc26.otf', '/manifest.webmanifest'];
+// Fv3.6 · Service worker mínimo (sin next-pwa):
+//  - cache-first para /_next/static (inmutable: los nombres llevan hash de build)
+//  - network-first para el documento (con fallback a caché para abrir offline)
+//  - NADA más: las banderas y cualquier request cross-origin no se tocan ni precachean
+const CACHE = 'album26-v2';
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Network-first para navegación (datos frescos), cache-first para estáticos.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return; // banderas/CDN: fuera
   if (req.mode === 'navigate') {
-    e.respondWith(fetch(req).catch(() => caches.match('/')));
+    e.respondWith(
+      fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy));
+        return res;
+      }).catch(() => caches.match(req).then((hit) => hit || caches.match('/')))
+    );
     return;
   }
-  e.respondWith(
-    caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-      const copy = res.clone();
-      caches.open(CACHE).then((c) => c.put(req, copy));
-      return res;
-    }).catch(() => hit))
-  );
+  if (url.pathname.startsWith('/_next/static/')) {
+    e.respondWith(
+      caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy));
+        return res;
+      }))
+    );
+  }
 });

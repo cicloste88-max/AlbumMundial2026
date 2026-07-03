@@ -144,6 +144,37 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   mecanismo; el CDN real se valida en prod. Regresión: 24/24 + 57/57 + 24/24 + 18/18 +
   15/15 (screenshots del gate fv34 regenerados: GROUP a una línea).
 
+## Fv3.6 — Tiles GROUP re-proporcionados + PWA instalable + fix img vacías
+
+- **Tiles GROUP** (gate fv35: banderas "achatadas" — los tiles verticales + cover solo
+  enseñaban el centro): zona de bandera con aspect 4:3 FIJO + cover (recorte lateral
+  ≤11% en 3:2, 0% en 4:3), banda de código al 20% (en `position:absolute`: como flex
+  item, su texto vertical estiraba el tile por encima del alto 4:3 y deformaba la zona),
+  tile ~1.66 apaisado. Escala: la fila del grupo pasa a `.grid.ggrp` con carril propio
+  `--gbw` = 40% del ancho de página en móvil / 35% en desktop (QA: ≤42%); los tiles
+  18-20 absorben el resto de la fila (algo menores que sus hermanos — trade-off del
+  carril). `grid-auto-rows:auto` (el `1fr` de Fv3.4 estiraba). Conmutador
+  `GROUP_FIT='cover43'|'fillsq'` — `fillsq` = alternativa fiel-imprenta (cuasi-cuadrado
+  + object-fit fill, deformación leve): NO activa, San decide en el gate.
+- **img vacías**: las 9 `<img>` sin src eran los `img.imgslot` placeholder del req #2
+  (pausado) en las hojas montadas ±2 (tiles 2..10 de MEX L al abrir en portada). Ya no
+  se emiten: render condicional cuando lleguen URLs reales (CSS intacto).
+- **PWA instalable**: manifest completo (name "Álbum Mundial 2026", short_name
+  "Álbum 26", standalone, colores `#1E1B33`, iconos 192/512 con URLs ABSOLUTAS del
+  bucket `flags/icons/`, purpose "any maskable"; se retiró `orientation:portrait` del
+  manifest F0 — bloquearía el spread apaisado en tablets instaladas). SW mínimo nuevo en
+  `public/sw.js` (sustituye al F0 según brief): cache-first `/_next/static`,
+  network-first documento con fallback a caché, cross-origin intacto (banderas NO se
+  precachean). Registro inline en `layout.tsx` solo con `NODE_ENV=production`. Meta iOS:
+  `icons.apple` (192 del bucket) + `appleWebApp`. `viewport.themeColor` alineado a
+  `#1E1B33` (era el beige F0, inconsistente con el manifest nuevo).
+- **QA**: `qa/verify-fv36-pwa.mjs` (14 checks: manifest 200 + campos + iconos cargan,
+  SW registrado en prod-build, bloque ≤42% + zona bandera 1.30-1.36 + banda 20% en
+  móvil y desktop, cero img sin src en portada/índice) con `serviceWorkers:'block'`
+  en los contextos con `page.route` (también añadido a fv35-geo: el SW podría
+  saltarse la interceptación). Screenshots del gate en `qa/screenshots/fv36/`.
+  Regresión completa: 14/14 + 24/24 + 57/57 + 24/24 + 18/18 + 15/15.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y
