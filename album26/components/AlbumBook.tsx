@@ -255,6 +255,34 @@ const CSS = `:root{
 .view.spread .spine{position:absolute; left:50%; top:0; bottom:0; width:22px; transform:translateX(-50%);
      pointer-events:none; z-index:60;
      background:linear-gradient(90deg, transparent, rgba(0,0,0,.20) 42%, rgba(0,0,0,.30) 50%, rgba(0,0,0,.20) 58%, transparent)}
+
+/* --- app Fv3.4: bloque GROUP con tiles 2x2 (página derecha). Tiles rectangulares
+       con la misma forma que los cromos a escala reducida: banda vertical izquierda
+       (~22%) con el código rotado -90° + bandera object-fit:cover. Sin círculos. --- */
+.gbadge{display:flex; flex-direction:column}
+.gtiles{flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; grid-auto-rows:1fr; gap:3%; margin-top:5%}
+.gtile{position:relative; display:flex; overflow:hidden; min-width:0; min-height:0; cursor:pointer;
+     border-radius:0; background:var(--deep); box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.gtile .gband{flex:0 0 22%; background:var(--deep); color:#fff; font-weight:800;
+     font-size:calc(var(--w)*.0165); letter-spacing:.06em; writing-mode:vertical-rl; transform:rotate(180deg);
+     display:flex; align-items:center; justify-content:center; padding:2px 1px}
+.gtile img{flex:1 1 auto; min-width:0; width:78%; height:100%; object-fit:cover; display:block; border-radius:0}
+.gtile .noflag{flex:1; min-width:0; font-size:calc(var(--w)*.018)}
+.gtile.me{border:max(3px, calc(var(--w)*.007)) solid #fff}
+
+/* --- app Fv3.4: header página izquierda (wordmark + bandera + federación).
+       Medidas relativas al ancho de página W = var(--w). El país se ajusta al
+       ancho (fit-to-width, máx 2 líneas) en JS manteniendo país > WE ARE. --- */
+.weare{margin:1% 0 3.5% 2%; line-height:.92}
+.weare .l1{font-size:calc(var(--w)*.115)}
+.weare .l2{font-size:calc(var(--w)*.18); letter-spacing:-.015em; line-height:.98}
+.fed{gap:4%; margin:2% 0 2% 2%; align-items:center}
+.fed img{width:calc(var(--w)*.29); flex:0 0 auto; aspect-ratio:3/2; object-fit:cover;
+     border:calc(var(--w)*.006) solid #fff; border-radius:4px; box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.fed .noflag{flex:0 0 calc(var(--w)*.29); width:calc(var(--w)*.29); aspect-ratio:3/2;
+     border:calc(var(--w)*.006) solid #fff; border-radius:4px; box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.fed .fname{font-weight:800; color:var(--hd1); font-size:calc(var(--w)*.019); line-height:1.15; text-align:left;
+     flex:1; min-width:0; max-height:calc(var(--w)*.19); overflow:hidden}
 `;
 
 // ---------- estado visual de un cromo ----------
@@ -333,8 +361,8 @@ function pageEquipoR(code: string, inv: InvMap): string {
     + '<div class="crestwrap">' + photoHTML(code, inv) + '<div class="mlang' + (V.mlang ? '' : ' solo') + '">' + mlang + '</div></div></div>'
     + '<div class="row-gap"></div><div class="grid">' + [14, 15, 16, 17].map((n) => tileHTML(code, n, inv)).join('') + '</div>'
     + '<div class="row-gap"></div><div class="grid">'
-    + '<div class="gbadge"><div class="gt">GROUP ' + T.grupo + '</div><div class="gflags">'
-    + GRUPOS[T.grupo].map((c) => '<div class="gflag" data-goto="' + sheetOf(c) + '"><span class="tab">' + c + '</span><img src="' + FLAG(c) + '" alt="' + c + '" onerror="flagErr(this)"></div>').join('')
+    + '<div class="gbadge"><div class="gt">GROUP ' + T.grupo + '</div><div class="gtiles">'
+    + GRUPOS[T.grupo].map((c) => '<div class="gtile' + (c === code ? ' me' : '') + '" data-goto="' + sheetOf(c) + '"><span class="gband">' + c + '</span><img src="' + FLAG(c) + '" alt="' + c + '" loading="lazy" onerror="flagErr(this)"></div>').join('')
     + '</div></div>' + [18, 19, 20].map((n) => tileHTML(code, n, inv)).join('') + '</div>'
     + '<div class="matches">' + partidos.map((m) => '<div class="match"><div class="pitch"></div><div class="mi">'
       + '<div class="mdate">' + m.fecha + '</div>'
@@ -451,6 +479,51 @@ function bookHTML(page: number, invs: Record<string, InvMap>): string {
   return '<div class="book" id="book">' + sheets + '<div class="lomo"></div></div>';
 }
 
+// Fv3.4: wordmark del header L — el país se ajusta al ancho disponible
+// (1 línea si cabe con ≥62% del objetivo, si no 2 líneas), y WE ARE se liga a
+// 0.63× el tamaño final del país (ratio cap-height 8.5/13.5 del álbum) para
+// mantener SIEMPRE la jerarquía país > WE ARE. Salvaguarda: si la página
+// desborda en vertical, se reduce el conjunto proporcionalmente.
+function fitHeaders(root: HTMLElement) {
+  root.querySelectorAll('.weare').forEach((w) => {
+    const l1 = w.querySelector('.l1') as HTMLElement | null;
+    const l2 = w.querySelector('.l2') as HTMLElement | null;
+    if (!l1 || !l2 || l2.clientWidth === 0) return;
+    l2.style.whiteSpace = 'nowrap';
+    l2.style.fontSize = '';
+    let fs = parseFloat(getComputedStyle(l2).fontSize);
+    if (l2.scrollWidth > l2.clientWidth) {
+      const k = l2.clientWidth / l2.scrollWidth;
+      if (k >= 0.62) {
+        fs = fs * k * 0.98;
+        l2.style.fontSize = fs + 'px';
+      } else {
+        // nombres largos: 2 líneas máximo
+        l2.style.whiteSpace = 'normal';
+        fs = fs * Math.max(k * 1.9, 0.55);
+        l2.style.fontSize = fs + 'px';
+        for (let i = 0; i < 8; i++) {
+          const lh = fs * 0.98;
+          const lines = Math.round(l2.clientHeight / lh);
+          if (l2.scrollWidth <= l2.clientWidth + 1 && lines <= 2) break;
+          fs *= 0.92;
+          l2.style.fontSize = fs + 'px';
+        }
+      }
+    }
+    l1.style.fontSize = fs * 0.63 + 'px';
+    // salvaguarda: la página no debe desbordar en vertical
+    const inner = w.closest('.inner') as HTMLElement | null;
+    if (inner) {
+      for (let i = 0; i < 6 && inner.scrollHeight > inner.clientHeight + 2; i++) {
+        fs *= 0.94;
+        l2.style.fontSize = fs + 'px';
+        l1.style.fontSize = fs * 0.63 + 'px';
+      }
+    }
+  });
+}
+
 /* ---------- componente (motor Fv3, sin cambios funcionales) ---------- */
 export default function AlbumBook() {
   const ref = useRef<HTMLDivElement>(null);
@@ -516,6 +589,8 @@ export default function AlbumBook() {
     const chips = el.querySelector('#chips') as HTMLElement | null;
     const onChip = chips?.querySelector('.on') as HTMLElement | null;
     if (chips && onChip) chips.scrollLeft = onChip.offsetLeft - chips.clientWidth / 2 + onChip.clientWidth / 2;
+    // Fv3.4: ajustar wordmark del header L al ancho disponible
+    fitHeaders(el);
   }, [page, invs, isDesktop]);
 
   // delegación de eventos + swipe (móvil: hojas · desktop: vistas + teclado + drag)

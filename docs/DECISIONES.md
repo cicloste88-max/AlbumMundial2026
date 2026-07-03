@@ -89,6 +89,29 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   ESP placeholder SPAIN) y se actualizaron al comportamiento con datos reales.
   17/17 + 57/57 + 24/24.
 
+## Fv3.4 — Calidad visual: bloque GROUP + header L + fix CZE fed
+
+- Dato primero: payload `album-verif-48` v2 (md5 049c9934) — CZE.fed corregida por GT
+  fotográfico ("Fotbalová asociace České republiky"). Verificado server-side y local
+  (reconstrucción + md5 idéntico); VERIF regenerado (resto byte-idéntico).
+- Bloque GROUP (pág. R): de mini-banderas .gflag a tiles 2×2 `.gtile` rectangulares
+  (misma forma que los cromos, sin clip — interpretación de "mismo clip-path": nuestros
+  cromos no tienen clip-path): banda vertical izquierda ~22% en var(--deep) con el
+  código rotado -90°, bandera object-fit:cover, overflow hidden, cero border-radius,
+  tile del equipo propio con marco blanco max(3px, .007w). El índice de grupos
+  (pageGrupos) conserva .gflag.
+- Header L: WE ARE en --hd1 y país en --hd2 con jerarquía país>WE ARE (ratio cap
+  8.5/13.5 → fuente 0.63×), fit-to-width JS (1 línea si cabe ≥62% del objetivo, si no
+  2 líneas) + salvaguarda anti-overflow vertical de página. Bandera 3:2 al 29% de W con
+  borde blanco .6%W, radio 4px y sombra; federación a la derecha en --hd1, fluye hasta
+  el alto de la bandera SIN ellipsis (el line-clamp 3 truncaba justo la fed de CZE;
+  "hasta 3 líneas" se cumple cuando cabe, feds largas fluyen — decisión documentada).
+- QA: suite qa/verify-fv34-visual.mjs (15 checks: GT CZE, jerarquía/ratio/colores,
+  bandera 29%/radio/borde, BIH ≤2 líneas, sin overflow, 0 border-radius 50%, banda 22%
+  vertical, marco del propio, PAN contenida) + screenshots del gate en
+  qa/screenshots/fv34/. fv31 (selectores .gtile/.gband) y fv33 (+check CZE → 18)
+  actualizadas. 15/15 + 18/18 + 57/57 + 24/24.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

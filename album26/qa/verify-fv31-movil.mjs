@@ -87,14 +87,14 @@ ok('GER L: QUALIFIERS placeholder (sin datos inventados)', txt.includes('QUALIFI
 await next(); txt = await visText();
 ok('GER R: partidos reales con fecha y estadio (Fv3.3)', txt.includes('Houston Stadium') && txt.includes('Toronto Stadium'));
 ok('GER R: bloque GROUP E (.gbadge)', await p.evaluate(() => document.querySelector('[data-current] .gbadge .gt')?.textContent) === 'GROUP E');
-const gflags = await p.evaluate(() => [...document.querySelectorAll('[data-current] .gbadge .gflag .tab')].map(t => t.textContent));
-ok('GROUP E con 4 mini-banderas tappeables', gflags.length === 4, gflags.join(','));
+const gflags = await p.evaluate(() => [...document.querySelectorAll('[data-current] .gbadge .gtile .gband')].map(t => t.textContent));
+ok('GROUP E con 4 tiles tappeables (banda con código)', gflags.length === 4, gflags.join(','));
 const jumped = await p.evaluate(() => {
-  const other = [...document.querySelectorAll('[data-current] .gbadge .gflag')].find(g => g.querySelector('.tab').textContent !== 'GER');
-  if (!other) return null; const code = other.querySelector('.tab').textContent; other.click(); return code;
+  const other = [...document.querySelectorAll('[data-current] .gbadge .gtile')].find(g => g.querySelector('.gband').textContent !== 'GER');
+  if (!other) return null; const code = other.querySelector('.gband').textContent; other.click(); return code;
 });
 await p.waitForTimeout(80);
-ok('mini-bandera salta al pliego de ' + jumped, (await visText()).includes('WE ARE'), 'page=' + await curPage());
+ok('tile del grupo salta al pliego de ' + jumped, (await visText()).includes('WE ARE'), 'page=' + await curPage());
 await clickChip('MEX'); await next();
 txt = await visText();
 ok('MEX R pageno: 11 · MEX', txt.includes('11 · MEX'));

@@ -50,6 +50,11 @@ const espMlang = await p.evaluate(() => document.querySelector('[data-current] .
 ok('ESP: mlang empieza por "España"', espMlang.startsWith('España'), espMlang.slice(0, 30));
 ok('ESP: mlang sin clase solo (dato real)', await p.evaluate(() => !document.querySelector('[data-current] .mlang')?.classList.contains('solo')));
 
+// CZE: fed corregida por GT fotográfico (Fv3.4)
+await clickChip('CZE');
+txt = await curText();
+ok('CZE: fed "Fotbalová asociace České republiky" (GT foto)', txt.includes('Fotbalová asociace České republiky'));
+
 // placeholders: PROHIBIDO inventar
 await clickChip('SCO');
 const scoFname = await p.evaluate(() => document.querySelector('[data-current] .fed .fname'));

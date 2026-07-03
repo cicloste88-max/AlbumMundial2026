@@ -1033,10 +1033,10 @@ export const ALBUM_TEAMS: Record<string, AlbumTeam> = {
 };
 
 // Verificación de las 48 selecciones desde build_handoff k=album-verif-48
-// (2026-07-03, md5 d4f68527a134e4e7d777acac21c8f583). NO editar a mano.
-// Cobertura: partidos 48/48 (fecha NBC + estadio schedule oficial, forma FIFA/álbum);
-// fed 42/48 (AUS NZL SCO SWE PAR URU en revisión → placeholder); mlang 47/48
-// (IRN en revisión → placeholder); quali solo GT RSA (47 en revisión → placeholder).
+// (actualizado 2026-07-03, md5 049c993474973dfdd87170e4bfeeecda; GT fotográfico:
+// CZE.fed corregida). NO editar a mano.
+// Cobertura: partidos 48/48; fed 42/48 (AUS NZL SCO SWE PAR URU en revisión →
+// placeholder); mlang 47/48 (IRN en revisión → placeholder); quali solo GT RSA.
 export const VERIF: Record<string, VerifExtra> = {
   "MEX": {
     "fed": "Federación Mexicana Fútbol Asociación A.C.",
@@ -1116,7 +1116,7 @@ export const VERIF: Record<string, VerifExtra> = {
     ]
   },
   "CZE": {
-    "fed": "Fotbalova asociace Ceské republiky",
+    "fed": "Fotbalová asociace České republiky",
     "mlang": "Cesko | Tschechien | Tchéquie | Cechia | Tsjechië | Chéquia | Çekya | Czechy | Чехия",
     "partidos": [
       {
