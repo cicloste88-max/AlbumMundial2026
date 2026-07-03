@@ -1,0 +1,49 @@
+# QA — suites Playwright del álbum
+
+Suites de verificación end-to-end usadas en los gates de cada fase, versionadas para
+que sean reproducibles (antes vivían en el scratchpad efímero de la sesión de Code).
+
+## Requisitos
+
+- `playwright-core` (no descarga navegadores): `npm i -D playwright-core` o `npx -y`.
+- Un Chromium local. En el sandbox de Claude Code ya existe en
+  `/opt/pw-browsers/chromium-1194/chrome-linux/chrome` (default de las suites);
+  en otra máquina, apúntalo con `QA_CHROME`.
+- La app corriendo (`npm run build && npm run start`, o `npm run dev`).
+
+## Ejecutar
+
+```bash
+# desde album26/
+npm run build && PORT=3000 npm run start &   # o el puerto que uses
+
+QA_URL=http://localhost:3000 node qa/verify-fv31-movil.mjs    # móvil (57 checks)
+QA_URL=http://localhost:3000 node qa/verify-fv32-spread.mjs   # spread desktop (24 checks)
+```
+
+Variables: `QA_URL` (default `http://localhost:3000/`), `QA_CHROME` (binario Chromium),
+`QA_OUT` (carpeta de screenshots, default `./qa-shots`).
+
+Salida: cada check imprime `PASS`/`FAIL` con detalle; el proceso termina con exit code 1
+si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
+
+## Qué cubre cada suite
+
+- **verify-fv31-movil.mjs** (viewport 420×900, modo móvil): portada/grupos, 98 hojas,
+  lazy mount ±2, 48 pliegos navegables por chips, spot-checks de datos (RSA-15 SITHOLE,
+  NED-3 VAN DIJK, ARG-17 MESSI, POR-15 RONALDO, ESP-13 TEAM PHOTO, mononímicos, typos
+  intactos), verif RSA/NED vs degradado genérico, flechas/swipe, ciclo de estados
+  falta→tengo→repe1..5→falta con tope, persistencia tras recarga, reset con
+  `store.clear`, y checks visuales de la referencia v3 (glifo 26, foil, --frame,
+  TEAM PHOTO intercalada, fuentes Baloo/Barlow, fondo #191228).
+- **verify-fv32-spread.mjs** (viewport 1280×800, modo spread): L+R simultáneas con lomo,
+  centrado (márgenes simétricos), aspect 2016/1204, footers de paginación real, sin
+  dorso, lazy por vistas ±1, navegación por vistas (chips/flechas/teclado/drag), estados
+  y persistencia en spread, y cambio a 390px con la misma clave de storage.
+
+## Notas
+
+- Las banderas salen como fallback `.noflag` si la máquina no llega a Supabase Storage
+  (caso del sandbox); no es un fallo de la suite.
+- El swipe táctil se simula con `TouchEvent` sintético (un swipe real por CDP desde el
+  borde izquierdo dispara el gesto "back" del navegador y rompe el test).

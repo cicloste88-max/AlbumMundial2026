@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "qa:movil": "node qa/verify-fv31-movil.mjs",
+    "qa:spread": "node qa/verify-fv32-spread.mjs"
   },
   "dependencies": {
     "next": "16.2.9",
@@ -19,6 +21,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "playwright-core": "^1.61.1",
     "typescript": "^5"
   }
 }
