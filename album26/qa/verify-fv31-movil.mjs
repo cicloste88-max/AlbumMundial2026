@@ -64,7 +64,7 @@ r = await spot('ARG', 17, ['LIONEL','MESSI'], 'R');        ok('ARG-17 = LIONEL M
 r = await spot('POR', 15, ['CRISTIANO','RONALDO'], 'R');   ok('POR-15 = CRISTIANO RONALDO', r.found, r.tile);
 r = await spot('ESP', 13, ['TEAM PHOTO'], 'R');            ok('ESP slot 13 = TEAM PHOTO (.crest)', r.found, r.tile);
 const espCrestwrap = await p.evaluate(() => document.querySelector('[data-current] .crestwrap')?.innerText || '');
-ok('ESP R: mlang solo = SPAIN junto a la TEAM PHOTO', espCrestwrap.includes('SPAIN'), espCrestwrap.replace(/\n/g,' '));
+ok('ESP R: mlang real junto a la TEAM PHOTO (España |, Fv3.3)', espCrestwrap.includes('España |'), espCrestwrap.replace(/\n/g,' '));
 r = await spot('ESP', 10, ['RODRI'], 'L');
 const rodriFn = await p.evaluate(() => document.querySelector('[data-tile="ESP-10"] .pname .fn')?.textContent.trim() ?? null);
 ok('ESP-10 mononímico: fn vacío (&nbsp;) + sn RODRI', r.found && rodriFn === '', JSON.stringify(rodriFn));
@@ -85,7 +85,7 @@ await clickChip('GER');
 txt = await visText();
 ok('GER L: QUALIFIERS placeholder (sin datos inventados)', txt.includes('QUALIFIERS') && !txt.includes('Zimbabwe'));
 await next(); txt = await visText();
-ok('GER R: partidos solo rivales sin fechas (GROUP E — MATCH)', txt.includes('GROUP E — MATCH') && !txt.includes('Stadium'));
+ok('GER R: partidos reales con fecha y estadio (Fv3.3)', txt.includes('Houston Stadium') && txt.includes('Toronto Stadium'));
 ok('GER R: bloque GROUP E (.gbadge)', await p.evaluate(() => document.querySelector('[data-current] .gbadge .gt')?.textContent) === 'GROUP E');
 const gflags = await p.evaluate(() => [...document.querySelectorAll('[data-current] .gbadge .gflag .tab')].map(t => t.textContent));
 ok('GROUP E con 4 mini-banderas tappeables', gflags.length === 4, gflags.join(','));

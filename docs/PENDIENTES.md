@@ -13,6 +13,15 @@ San los valida contra el álbum físico y llega paquete con datos nuevos):
 - NZL-2 MAX CROCOMBE PAYNE
 - HAI-15 DERRICK ETIENNE JR
 
+## Datos de verificación en revisión (Fv3.3, payload album-verif-48)
+Placeholders en la app hasta que llegue payload nuevo (NO inventar):
+- **fed** pendiente en 6: AUS, NZL, SCO, SWE, PAR, URU.
+- **mlang** pendiente en 1: IRN (placeholder = país del dataset "IRAN").
+- **quali** solo RSA (GT); los otros 47 en revisión (filas vacías).
+- Nomenclatura del payload: equipos en forma FIFA (Korea Republic, IR Iran,
+  Côte d'Ivoire, Cabo Verde, Congo DR, Czechia, Türkiye); estadios en forma
+  álbum; BC Place → "BC Place Vancouver".
+
 ## Requisito #2 — imágenes de cromos recortadas: **PAUSADO**
 No añadir nada de recorte hasta que se reactive. El markup ya deja el hueco
 (`img.imgslot` dentro de `.sticker .art`, display:none).

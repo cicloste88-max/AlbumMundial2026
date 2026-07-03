@@ -73,6 +73,22 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
 - QA: spread 24/24 (márgenes 64/64px, footers 44/45 · CUW, sin `.face.back`) +
   regresión móvil 57/57 + persistencia cross-modo (misma clave storage).
 
+## Fv3.3 — Datos verificados 48 selecciones (fed/mlang/partidos/quali)
+
+- Payload `build_handoff k=album-verif-48` (md5 d4f68527, 21027 chars) verificado
+  server-side y local. Validación previa: 48 equipos = ORDER, 48×3 partidos con
+  "fecha – estadio" y hl coherente con la forma FIFA del equipo, fed 42/48,
+  mlang 47/48 (falta IRN), quali solo RSA.
+- `lib/album-data.ts`: regenerada SOLO la sección VERIF por script (ORDER/PALETAS/
+  ALBUM_TEAMS byte-idénticos; slots/jugadores/typos intactos).
+- `AlbumBook.tsx`: SIN cambios — los builders Fv3.1 ya consumen VERIF con los
+  tratamientos placeholder del diseño v3 (fed ausente → solo bandera; mlang
+  ausente → 'mlang solo' con el país del dataset; quali ausente → filas vacías).
+- QA: nueva suite qa/verify-fv33-verif.mjs (17 checks GT+placeholders). Dos checks
+  de las suites previas asumían el degradado antiguo (GER/CUW "GROUP X — MATCH",
+  ESP placeholder SPAIN) y se actualizaron al comportamiento con datos reales.
+  17/17 + 57/57 + 24/24.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

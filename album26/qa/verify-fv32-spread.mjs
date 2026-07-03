@@ -38,7 +38,7 @@ await clickChip('CUW');
 let txt = await curText();
 ok('CUW spread: WE ARE CURAÇAO (L) visible', txt.includes('WE ARE') && txt.includes('CURAÇAO'));
 ok('CUW spread: QUALIFIERS (L) visible', txt.includes('QUALIFIERS'));
-ok('CUW spread: GROUP E + partidos (R) visibles SIMULTÁNEOS', txt.includes('GROUP E') && txt.includes('MATCH'));
+ok('CUW spread: GROUP E + partidos reales (R) visibles SIMULTÁNEOS', txt.includes('GROUP E') && txt.includes('Houston Stadium'));
 const slots = await p.evaluate(() => ({
   l: !!document.querySelector('.view[data-current] .spage.l [data-tile="CUW-2"]'),
   r: !!document.querySelector('.view[data-current] .spage.r [data-tile="CUW-15"]'),

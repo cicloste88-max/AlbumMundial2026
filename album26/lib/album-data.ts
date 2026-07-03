@@ -1032,39 +1032,1160 @@ export const ALBUM_TEAMS: Record<string, AlbumTeam> = {
   } },
 };
 
-// Extras verificados SOLO para RSA y NED (no inventar para el resto).
+// Verificación de las 48 selecciones desde build_handoff k=album-verif-48
+// (2026-07-03, md5 d4f68527a134e4e7d777acac21c8f583). NO editar a mano.
+// Cobertura: partidos 48/48 (fecha NBC + estadio schedule oficial, forma FIFA/álbum);
+// fed 42/48 (AUS NZL SCO SWE PAR URU en revisión → placeholder); mlang 47/48
+// (IRN en revisión → placeholder); quali solo GT RSA (47 en revisión → placeholder).
 export const VERIF: Record<string, VerifExtra> = {
-  "NED": {
-    "fed": "Koninklijke Nederlandse Voetbalbond",
-    "mlang": "Nederland | Niederlande | Pays-Bas | Paesi Bassi | Países Bajos | Países Baixos | Hollanda | Holandia | Нидерланды"
+  "MEX": {
+    "fed": "Federación Mexicana Fútbol Asociación A.C.",
+    "mlang": "México | Mexiko | Mexique | Messico | Mexico | México | Meksika | Meksyk | Мексика",
+    "partidos": [
+      {
+        "fecha": "Thursday, 11 June – Mexico City Stadium",
+        "a": "Mexico",
+        "b": "South Africa",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 18 June – Guadalajara Stadium",
+        "a": "Mexico",
+        "b": "Korea Republic",
+        "hl": "a"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Mexico City Stadium",
+        "a": "Czechia",
+        "b": "Mexico",
+        "hl": "b"
+      }
+    ]
   },
   "RSA": {
     "fed": "South African Football Association",
     "mlang": "South Africa | Südafrika | Afrique du Sud | Sudafrica | Zuid-Afrika | Sudáfrica | África do Sul | Güney Afrika Cumhuriyeti | Południowa Afryka | Южно-Африканская Республика",
+    "partidos": [
+      {
+        "fecha": "Thursday, 11 June – Mexico City Stadium",
+        "a": "Mexico",
+        "b": "South Africa",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 18 June – Atlanta Stadium",
+        "a": "Czechia",
+        "b": "South Africa",
+        "hl": "b"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Monterrey Stadium",
+        "a": "South Africa",
+        "b": "Korea Republic",
+        "hl": "a"
+      }
+    ],
     "quali": [
       "South Africa – Zimbabwe",
       "Rwanda – South Africa",
       "South Africa – Lesotho"
-    ],
+    ]
+  },
+  "KOR": {
+    "fed": "Korea Football Association",
+    "mlang": "Südkorea | Corée du Sud | Corea del Sud | Zuid-Korea | Corea del Sur | Coreia do Sul | Güney Kore | Korea Południowa | Республика Корея",
     "partidos": [
       {
+        "fecha": "Thursday, 11 June – Guadalajara Stadium",
+        "a": "Korea Republic",
+        "b": "Czechia",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 18 June – Guadalajara Stadium",
         "a": "Mexico",
-        "b": "South Africa",
-        "hl": "b",
-        "fecha": "Thursday, 11 June – Mexico City Stadium"
+        "b": "Korea Republic",
+        "hl": "b"
       },
       {
-        "a": "Czechia",
-        "b": "South Africa",
-        "hl": "b",
-        "fecha": "Thursday, 18 June – Atlanta Stadium"
-      },
-      {
+        "fecha": "Wednesday, 24 June – Monterrey Stadium",
         "a": "South Africa",
         "b": "Korea Republic",
-        "hl": "a",
-        "fecha": "Wednesday, 24 June – Monterrey Stadium"
+        "hl": "b"
       }
     ]
+  },
+  "CZE": {
+    "fed": "Fotbalova asociace Ceské republiky",
+    "mlang": "Cesko | Tschechien | Tchéquie | Cechia | Tsjechië | Chéquia | Çekya | Czechy | Чехия",
+    "partidos": [
+      {
+        "fecha": "Thursday, 11 June – Guadalajara Stadium",
+        "a": "Korea Republic",
+        "b": "Czechia",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 18 June – Atlanta Stadium",
+        "a": "Czechia",
+        "b": "South Africa",
+        "hl": "a"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Mexico City Stadium",
+        "a": "Czechia",
+        "b": "Mexico",
+        "hl": "a"
+      }
+    ]
+  },
+  "CAN": {
+    "fed": "Canadian Soccer Association",
+    "partidos": [
+      {
+        "fecha": "Friday, 12 June – Toronto Stadium",
+        "a": "Canada",
+        "b": "Bosnia and Herzegovina",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 18 June – BC Place Vancouver",
+        "a": "Canada",
+        "b": "Qatar",
+        "hl": "a"
+      },
+      {
+        "fecha": "Wednesday, 24 June – BC Place Vancouver",
+        "a": "Switzerland",
+        "b": "Canada",
+        "hl": "b"
+      }
+    ],
+    "mlang": "Kanada | Canada | Kanada | Канада"
+  },
+  "BIH": {
+    "fed": "Nogometni Fudbalski Savez Bosne Hercegovine",
+    "mlang": "Bosnien und Herzegowina | Bosnie-Herzégovine | Bosnia ed Erzegovina | Bosnië en Herzegovina | Bosnia y Herzegovina | Bosna Hersek | Bośnia i Hercegowina | Босния и Герцеговина",
+    "partidos": [
+      {
+        "fecha": "Friday, 12 June – Toronto Stadium",
+        "a": "Canada",
+        "b": "Bosnia and Herzegovina",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 18 June – Los Angeles Stadium",
+        "a": "Switzerland",
+        "b": "Bosnia and Herzegovina",
+        "hl": "b"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Seattle Stadium",
+        "a": "Bosnia and Herzegovina",
+        "b": "Qatar",
+        "hl": "a"
+      }
+    ]
+  },
+  "QAT": {
+    "fed": "Qatar Football Association",
+    "partidos": [
+      {
+        "fecha": "Saturday, 13 June – San Francisco Bay Area Stadium",
+        "a": "Qatar",
+        "b": "Switzerland",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 18 June – BC Place Vancouver",
+        "a": "Canada",
+        "b": "Qatar",
+        "hl": "b"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Seattle Stadium",
+        "a": "Bosnia and Herzegovina",
+        "b": "Qatar",
+        "hl": "b"
+      }
+    ],
+    "mlang": "Katar | Qatar | Catar | Katar | Катар"
+  },
+  "SUI": {
+    "fed": "Schweizerischer Fussballverband Association Suisse Football Associazione Svizzera Football",
+    "mlang": "Schweiz / Suisse / Svizzera | Zwitserland | Suiza | İsviçre | Szwajcaria | Швейцария",
+    "partidos": [
+      {
+        "fecha": "Saturday, 13 June – San Francisco Bay Area Stadium",
+        "a": "Qatar",
+        "b": "Switzerland",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 18 June – Los Angeles Stadium",
+        "a": "Switzerland",
+        "b": "Bosnia and Herzegovina",
+        "hl": "a"
+      },
+      {
+        "fecha": "Wednesday, 24 June – BC Place Vancouver",
+        "a": "Switzerland",
+        "b": "Canada",
+        "hl": "a"
+      }
+    ]
+  },
+  "BRA": {
+    "fed": "Confederação Brasileira Futebol",
+    "mlang": "Brasil | Brasilien | Brasil | Brasile | Brazilië | Brasil | Brezilya | Brazylia | Бразилия",
+    "partidos": [
+      {
+        "fecha": "Saturday, 13 June – New York New Jersey Stadium",
+        "a": "Brazil",
+        "b": "Morocco",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 19 June – Philadelphia Stadium",
+        "a": "Brazil",
+        "b": "Haiti",
+        "hl": "a"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Miami Stadium",
+        "a": "Scotland",
+        "b": "Brazil",
+        "hl": "b"
+      }
+    ]
+  },
+  "MAR": {
+    "fed": "Fédération royale marocaine football",
+    "mlang": "Marokko | Maroc | Marocco | Marokko | Marruecos | Marrocos | Fas | Maroko | Марокко",
+    "partidos": [
+      {
+        "fecha": "Saturday, 13 June – New York New Jersey Stadium",
+        "a": "Brazil",
+        "b": "Morocco",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 19 June – Boston Stadium",
+        "a": "Scotland",
+        "b": "Morocco",
+        "hl": "b"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Atlanta Stadium",
+        "a": "Morocco",
+        "b": "Haiti",
+        "hl": "a"
+      }
+    ]
+  },
+  "HAI": {
+    "fed": "Fédération Haïtienne de Football",
+    "partidos": [
+      {
+        "fecha": "Saturday, 13 June – Boston Stadium",
+        "a": "Haiti",
+        "b": "Scotland",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 19 June – Philadelphia Stadium",
+        "a": "Brazil",
+        "b": "Haiti",
+        "hl": "b"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Atlanta Stadium",
+        "a": "Morocco",
+        "b": "Haiti",
+        "hl": "b"
+      }
+    ],
+    "mlang": "Ayiti / Haiti | Haiti | Гаити"
+  },
+  "SCO": {
+    "mlang": "AA SST | Scotland | Schottland | Écosse | Scozia | Schotland | Escocia | Escócia | İskoçya | Szkocja | Шотландия",
+    "partidos": [
+      {
+        "fecha": "Saturday, 13 June – Boston Stadium",
+        "a": "Haiti",
+        "b": "Scotland",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 19 June – Boston Stadium",
+        "a": "Scotland",
+        "b": "Morocco",
+        "hl": "a"
+      },
+      {
+        "fecha": "Wednesday, 24 June – Miami Stadium",
+        "a": "Scotland",
+        "b": "Brazil",
+        "hl": "a"
+      }
+    ]
+  },
+  "USA": {
+    "fed": "U.S. Soccer Federation",
+    "mlang": "United States of America | Vereinigte Staaten von Amerika | Stati Uniti d'America | Amerika Birleşik Devletleri | Stany Zjednoczone | Соединенные Штаты Америки",
+    "partidos": [
+      {
+        "fecha": "Friday, 12 June – Los Angeles Stadium",
+        "a": "USA",
+        "b": "Paraguay",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 19 June – Seattle Stadium",
+        "a": "USA",
+        "b": "Australia",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 25 June – Los Angeles Stadium",
+        "a": "Türkiye",
+        "b": "USA",
+        "hl": "b"
+      }
+    ]
+  },
+  "PAR": {
+    "mlang": "Paraguay | Paraguai | Paraguay | Paragwaj | Парагвай",
+    "partidos": [
+      {
+        "fecha": "Friday, 12 June – Los Angeles Stadium",
+        "a": "USA",
+        "b": "Paraguay",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 19 June – San Francisco Bay Area Stadium",
+        "a": "Türkiye",
+        "b": "Paraguay",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 25 June – San Francisco Bay Area Stadium",
+        "a": "Paraguay",
+        "b": "Australia",
+        "hl": "a"
+      }
+    ]
+  },
+  "AUS": {
+    "partidos": [
+      {
+        "fecha": "Saturday, 13 June – BC Place Vancouver",
+        "a": "Australia",
+        "b": "Türkiye",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 19 June – Seattle Stadium",
+        "a": "USA",
+        "b": "Australia",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 25 June – San Francisco Bay Area Stadium",
+        "a": "Paraguay",
+        "b": "Australia",
+        "hl": "b"
+      }
+    ],
+    "mlang": "Australia | Australien | Australie | Australia | Austrália | Avustralya | Australia | Австралия"
+  },
+  "TUR": {
+    "fed": "Türkiye Futbol Federasyonu",
+    "mlang": "Turkey | Türkei | Turquie | Turchia | Turkije | Turquia | Turcja | Турция",
+    "partidos": [
+      {
+        "fecha": "Saturday, 13 June – BC Place Vancouver",
+        "a": "Australia",
+        "b": "Türkiye",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 19 June – San Francisco Bay Area Stadium",
+        "a": "Türkiye",
+        "b": "Paraguay",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 25 June – Los Angeles Stadium",
+        "a": "Türkiye",
+        "b": "USA",
+        "hl": "a"
+      }
+    ]
+  },
+  "GER": {
+    "fed": "Deutscher Fußball-Bund",
+    "mlang": "Deutschland | Allemagne | Germania | Duitsland | Alemania | Alemanha | Almanya | Niemcy | Германия",
+    "partidos": [
+      {
+        "fecha": "Sunday, 14 June – Houston Stadium",
+        "a": "Germany",
+        "b": "Curaçao",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 20 June – Toronto Stadium",
+        "a": "Germany",
+        "b": "Côte d'Ivoire",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 25 June – New York New Jersey Stadium",
+        "a": "Ecuador",
+        "b": "Germany",
+        "hl": "b"
+      }
+    ]
+  },
+  "CUW": {
+    "fed": "Federashon Futbol Korsou",
+    "mlang": "Curacao / Korsou | Curaçao | Curazao | Curaçau | Curaçao | Кюрасао",
+    "partidos": [
+      {
+        "fecha": "Sunday, 14 June – Houston Stadium",
+        "a": "Germany",
+        "b": "Curaçao",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 20 June – Kansas City Stadium",
+        "a": "Ecuador",
+        "b": "Curaçao",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 25 June – Philadelphia Stadium",
+        "a": "Curaçao",
+        "b": "Côte d'Ivoire",
+        "hl": "a"
+      }
+    ]
+  },
+  "CIV": {
+    "fed": "Fédération Ivoirienne Football",
+    "mlang": "Ivory Coast | Elfenbeinküste | Costa d'Avorio | Ivoorkust | Costa de Marfil | Costa do Marfim | Fildişi Sahili | Кот-д’Ивуар",
+    "partidos": [
+      {
+        "fecha": "Sunday, 14 June – Philadelphia Stadium",
+        "a": "Côte d'Ivoire",
+        "b": "Ecuador",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 20 June – Toronto Stadium",
+        "a": "Germany",
+        "b": "Côte d'Ivoire",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 25 June – Philadelphia Stadium",
+        "a": "Curaçao",
+        "b": "Côte d'Ivoire",
+        "hl": "b"
+      }
+    ]
+  },
+  "ECU": {
+    "fed": "Federacién Ecuatoriana Futbol",
+    "mlang": "Ecuador | Équateur | Ecuador | Equador | Ekvador | Ekwador | Эквадор",
+    "partidos": [
+      {
+        "fecha": "Sunday, 14 June – Philadelphia Stadium",
+        "a": "Côte d'Ivoire",
+        "b": "Ecuador",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 20 June – Kansas City Stadium",
+        "a": "Ecuador",
+        "b": "Curaçao",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 25 June – New York New Jersey Stadium",
+        "a": "Ecuador",
+        "b": "Germany",
+        "hl": "a"
+      }
+    ]
+  },
+  "NED": {
+    "fed": "Koninklijke Nederlandse Voetbalbond",
+    "mlang": "Nederland | Niederlande | Pays-Bas | Paesi Bassi | Países Bajos | Países Baixos | Hollanda | Holandia | Нидерланды",
+    "partidos": [
+      {
+        "fecha": "Sunday, 14 June – Dallas Stadium",
+        "a": "Netherlands",
+        "b": "Japan",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 20 June – Houston Stadium",
+        "a": "Netherlands",
+        "b": "Sweden",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 25 June – Kansas City Stadium",
+        "a": "Tunisia",
+        "b": "Netherlands",
+        "hl": "b"
+      }
+    ]
+  },
+  "JPN": {
+    "fed": "Japan Football Association",
+    "mlang": "Japan | Japon | Giappone | Japan | Japon | Japão | Japonya | Japonia | Япония",
+    "partidos": [
+      {
+        "fecha": "Sunday, 14 June – Dallas Stadium",
+        "a": "Netherlands",
+        "b": "Japan",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 20 June – Monterrey Stadium",
+        "a": "Tunisia",
+        "b": "Japan",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 25 June – Dallas Stadium",
+        "a": "Japan",
+        "b": "Sweden",
+        "hl": "a"
+      }
+    ]
+  },
+  "SWE": {
+    "mlang": "Schweden | Suède | Svezia | Zweden | Suecia | Suécia | Szwecja | Швеция",
+    "partidos": [
+      {
+        "fecha": "Sunday, 14 June – Monterrey Stadium",
+        "a": "Sweden",
+        "b": "Tunisia",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 20 June – Houston Stadium",
+        "a": "Netherlands",
+        "b": "Sweden",
+        "hl": "b"
+      },
+      {
+        "fecha": "Thursday, 25 June – Dallas Stadium",
+        "a": "Japan",
+        "b": "Sweden",
+        "hl": "b"
+      }
+    ]
+  },
+  "TUN": {
+    "fed": "Fédération Tunisienne Football",
+    "mlang": "Tunesien | Tunisie | Tunisia | Tunesië | Túnez | Tunisia | Tunus | Tunezja | Тунис",
+    "partidos": [
+      {
+        "fecha": "Sunday, 14 June – Monterrey Stadium",
+        "a": "Sweden",
+        "b": "Tunisia",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 20 June – Monterrey Stadium",
+        "a": "Tunisia",
+        "b": "Japan",
+        "hl": "a"
+      },
+      {
+        "fecha": "Thursday, 25 June – Kansas City Stadium",
+        "a": "Tunisia",
+        "b": "Netherlands",
+        "hl": "a"
+      }
+    ]
+  },
+  "BEL": {
+    "fed": "Union Royale Belge des Sociétés Football-Association Koninklijke Belgische Voetbalbond",
+    "mlang": "Belgique / Belgié | Belgien | Belgio | Bélgica | Belçika | Belgia | Бельгия",
+    "partidos": [
+      {
+        "fecha": "Monday, 15 June – BC Place Vancouver",
+        "a": "Belgium",
+        "b": "Egypt",
+        "hl": "a"
+      },
+      {
+        "fecha": "Sunday, 21 June – Los Angeles Stadium",
+        "a": "Belgium",
+        "b": "IR Iran",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 26 June – BC Place Vancouver",
+        "a": "New Zealand",
+        "b": "Belgium",
+        "hl": "b"
+      }
+    ]
+  },
+  "EGY": {
+    "fed": "Egyptian Football Association",
+    "mlang": "Ägypten | Égypte | Egitto | Egypte | Egipto | Egito | Egipt | Египет",
+    "partidos": [
+      {
+        "fecha": "Monday, 15 June – BC Place Vancouver",
+        "a": "Belgium",
+        "b": "Egypt",
+        "hl": "b"
+      },
+      {
+        "fecha": "Sunday, 21 June – BC Place Vancouver",
+        "a": "New Zealand",
+        "b": "Egypt",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 26 June – Seattle Stadium",
+        "a": "Egypt",
+        "b": "IR Iran",
+        "hl": "a"
+      }
+    ]
+  },
+  "IRN": {
+    "fed": "Football Federation Islamic Republic of Iran",
+    "partidos": [
+      {
+        "fecha": "Monday, 15 June – Los Angeles Stadium",
+        "a": "IR Iran",
+        "b": "New Zealand",
+        "hl": "a"
+      },
+      {
+        "fecha": "Sunday, 21 June – Los Angeles Stadium",
+        "a": "Belgium",
+        "b": "IR Iran",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 26 June – Seattle Stadium",
+        "a": "Egypt",
+        "b": "IR Iran",
+        "hl": "b"
+      }
+    ]
+  },
+  "NZL": {
+    "mlang": "New Zealand | Neuseeland | Nouvelle-Zélande | Nuova Zelanda | Nieuw-Zeeland | Nueva Zelanda | Nova Zelândia | Yeni Zelanda | Nowa Zelandia | Новая Зеландия",
+    "partidos": [
+      {
+        "fecha": "Monday, 15 June – Los Angeles Stadium",
+        "a": "IR Iran",
+        "b": "New Zealand",
+        "hl": "b"
+      },
+      {
+        "fecha": "Sunday, 21 June – BC Place Vancouver",
+        "a": "New Zealand",
+        "b": "Egypt",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 26 June – BC Place Vancouver",
+        "a": "New Zealand",
+        "b": "Belgium",
+        "hl": "a"
+      }
+    ]
+  },
+  "ESP": {
+    "fed": "Real Federación Española Fútbol",
+    "mlang": "España | Spanien | Espagne | Spagna | Spanje | Espanha | İspanya | Hiszpania | Испания",
+    "partidos": [
+      {
+        "fecha": "Monday, 15 June – Atlanta Stadium",
+        "a": "Spain",
+        "b": "Cabo Verde",
+        "hl": "a"
+      },
+      {
+        "fecha": "Sunday, 21 June – Atlanta Stadium",
+        "a": "Spain",
+        "b": "Saudi Arabia",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 26 June – Guadalajara Stadium",
+        "a": "Uruguay",
+        "b": "Spain",
+        "hl": "b"
+      }
+    ]
+  },
+  "CPV": {
+    "fed": "Federação Cabo-verdiana Futebol",
+    "mlang": "Cape Verde | Kap Verde | Cap-Vert | Capo Verde | Kaapverdië | Cabo Verde | Yesil Burun Adaları | Republika Zielonego Przylądka | Кабо-Верде",
+    "partidos": [
+      {
+        "fecha": "Monday, 15 June – Atlanta Stadium",
+        "a": "Spain",
+        "b": "Cabo Verde",
+        "hl": "b"
+      },
+      {
+        "fecha": "Sunday, 21 June – Miami Stadium",
+        "a": "Uruguay",
+        "b": "Cabo Verde",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 26 June – Houston Stadium",
+        "a": "Cabo Verde",
+        "b": "Saudi Arabia",
+        "hl": "a"
+      }
+    ]
+  },
+  "KSA": {
+    "fed": "Saudi Arabian Football Federation",
+    "mlang": "Saudi-Arabien | Arabie saoudite | Arabia Saudita | Saudi-Arabien | Saudi Arabia | Arabia Saudita | Suudi Arabistan | Arabia Saudyjska | Саудовская Аравия",
+    "partidos": [
+      {
+        "fecha": "Monday, 15 June – Miami Stadium",
+        "a": "Saudi Arabia",
+        "b": "Uruguay",
+        "hl": "a"
+      },
+      {
+        "fecha": "Sunday, 21 June – Atlanta Stadium",
+        "a": "Spain",
+        "b": "Saudi Arabia",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 26 June – Houston Stadium",
+        "a": "Cabo Verde",
+        "b": "Saudi Arabia",
+        "hl": "b"
+      }
+    ]
+  },
+  "URU": {
+    "mlang": "Uruguay | Uruguai | Uruguay | Urugwaj | Уругвай",
+    "partidos": [
+      {
+        "fecha": "Monday, 15 June – Miami Stadium",
+        "a": "Saudi Arabia",
+        "b": "Uruguay",
+        "hl": "b"
+      },
+      {
+        "fecha": "Sunday, 21 June – Miami Stadium",
+        "a": "Uruguay",
+        "b": "Cabo Verde",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 26 June – Guadalajara Stadium",
+        "a": "Uruguay",
+        "b": "Spain",
+        "hl": "a"
+      }
+    ]
+  },
+  "FRA": {
+    "fed": "Fédération Française Football",
+    "mlang": "France | Frankreich | Francia | Frankrijk | Francia | Fransa | Francja | Франция",
+    "partidos": [
+      {
+        "fecha": "Tuesday, 16 June – New York New Jersey Stadium",
+        "a": "France",
+        "b": "Senegal",
+        "hl": "a"
+      },
+      {
+        "fecha": "Monday, 22 June – Philadelphia Stadium",
+        "a": "France",
+        "b": "Iraq",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 26 June – Boston Stadium",
+        "a": "Norway",
+        "b": "France",
+        "hl": "b"
+      }
+    ]
+  },
+  "SEN": {
+    "fed": "Fédération Sénégalaise Football",
+    "partidos": [
+      {
+        "fecha": "Tuesday, 16 June – New York New Jersey Stadium",
+        "a": "France",
+        "b": "Senegal",
+        "hl": "b"
+      },
+      {
+        "fecha": "Monday, 22 June – New York New Jersey Stadium",
+        "a": "Norway",
+        "b": "Senegal",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 26 June – Toronto Stadium",
+        "a": "Senegal",
+        "b": "Iraq",
+        "hl": "a"
+      }
+    ],
+    "mlang": "Sénégal | Senegal | Сенегал"
+  },
+  "IRQ": {
+    "fed": "Iraq Football Association",
+    "partidos": [
+      {
+        "fecha": "Tuesday, 16 June – Boston Stadium",
+        "a": "Iraq",
+        "b": "Norway",
+        "hl": "a"
+      },
+      {
+        "fecha": "Monday, 22 June – Philadelphia Stadium",
+        "a": "France",
+        "b": "Iraq",
+        "hl": "b"
+      },
+      {
+        "fecha": "Friday, 26 June – Toronto Stadium",
+        "a": "Senegal",
+        "b": "Iraq",
+        "hl": "b"
+      }
+    ],
+    "mlang": "Irak | Iraq | Irak | Iraque | Irak | Ирак"
+  },
+  "NOR": {
+    "fed": "Norges Fotballforbund",
+    "mlang": "Norge | Norwegen | Norvège | Norvegia | Noorwegen | Noruega | Norveç | Norwegia | Норвегия",
+    "partidos": [
+      {
+        "fecha": "Tuesday, 16 June – Boston Stadium",
+        "a": "Iraq",
+        "b": "Norway",
+        "hl": "b"
+      },
+      {
+        "fecha": "Monday, 22 June – New York New Jersey Stadium",
+        "a": "Norway",
+        "b": "Senegal",
+        "hl": "a"
+      },
+      {
+        "fecha": "Friday, 26 June – Boston Stadium",
+        "a": "Norway",
+        "b": "France",
+        "hl": "a"
+      }
+    ]
+  },
+  "ARG": {
+    "fed": "Argentine Football Association",
+    "mlang": "Argentina | Argentinien | Argentine | Argentina | Argentinië | Argentina | Arjantin | Argentyna | Аргентина",
+    "partidos": [
+      {
+        "fecha": "Tuesday, 16 June – Kansas City Stadium",
+        "a": "Argentina",
+        "b": "Algeria",
+        "hl": "a"
+      },
+      {
+        "fecha": "Monday, 22 June – Dallas Stadium",
+        "a": "Argentina",
+        "b": "Austria",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 27 June – Dallas Stadium",
+        "a": "Jordan",
+        "b": "Argentina",
+        "hl": "b"
+      }
+    ]
+  },
+  "ALG": {
+    "fed": "Fédération Algérienne Football",
+    "mlang": "Algerien | Algérie | Algeria | Algerije | Argelia | Argélia | Cezayir | Algieria | Алжир",
+    "partidos": [
+      {
+        "fecha": "Tuesday, 16 June – Kansas City Stadium",
+        "a": "Argentina",
+        "b": "Algeria",
+        "hl": "b"
+      },
+      {
+        "fecha": "Monday, 22 June – San Francisco Bay Area Stadium",
+        "a": "Jordan",
+        "b": "Algeria",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 27 June – Kansas City Stadium",
+        "a": "Algeria",
+        "b": "Austria",
+        "hl": "a"
+      }
+    ]
+  },
+  "AUT": {
+    "fed": "Austrian Football Association",
+    "mlang": "Österreich | Autriche | Austria | Oostenrijk | Austria | Австрия",
+    "partidos": [
+      {
+        "fecha": "Tuesday, 16 June – San Francisco Bay Area Stadium",
+        "a": "Austria",
+        "b": "Jordan",
+        "hl": "a"
+      },
+      {
+        "fecha": "Monday, 22 June – Dallas Stadium",
+        "a": "Argentina",
+        "b": "Austria",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 27 June – Kansas City Stadium",
+        "a": "Algeria",
+        "b": "Austria",
+        "hl": "b"
+      }
+    ]
+  },
+  "JOR": {
+    "fed": "Jordan Football Association",
+    "mlang": "Jordanien | Jordanie | Giordania | Jordania | Иордания",
+    "partidos": [
+      {
+        "fecha": "Tuesday, 16 June – San Francisco Bay Area Stadium",
+        "a": "Austria",
+        "b": "Jordan",
+        "hl": "b"
+      },
+      {
+        "fecha": "Monday, 22 June – San Francisco Bay Area Stadium",
+        "a": "Jordan",
+        "b": "Algeria",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 27 June – Dallas Stadium",
+        "a": "Jordan",
+        "b": "Argentina",
+        "hl": "a"
+      }
+    ]
+  },
+  "POR": {
+    "fed": "Federacao Portuguesa Futebol",
+    "mlang": "Portugal | Portogallo | Portugal | Portekiz | Portugalia | Португалия",
+    "partidos": [
+      {
+        "fecha": "Wednesday, 17 June – Houston Stadium",
+        "a": "Portugal",
+        "b": "Congo DR",
+        "hl": "a"
+      },
+      {
+        "fecha": "Tuesday, 23 June – Houston Stadium",
+        "a": "Portugal",
+        "b": "Uzbekistan",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 27 June – Miami Stadium",
+        "a": "Colombia",
+        "b": "Portugal",
+        "hl": "b"
+      }
+    ]
+  },
+  "COD": {
+    "fed": "Fédération Congolaise de Football Association",
+    "mlang": "République démocratique du Congo | Demokratische Republik Kongo | Repubblica Democratica del Congo | República Democrática do Congo | Kongo Demokratik Cumhuriyeti | Demokratyczna Republika Konga | Демократическая Республика Конго",
+    "partidos": [
+      {
+        "fecha": "Wednesday, 17 June – Houston Stadium",
+        "a": "Portugal",
+        "b": "Congo DR",
+        "hl": "b"
+      },
+      {
+        "fecha": "Tuesday, 23 June – Guadalajara Stadium",
+        "a": "Colombia",
+        "b": "Congo DR",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 27 June – Atlanta Stadium",
+        "a": "Congo DR",
+        "b": "Uzbekistan",
+        "hl": "a"
+      }
+    ]
+  },
+  "UZB": {
+    "fed": "O'zbekiston Futbol Assotsiatsiyasi",
+    "mlang": "O'zbekiston | Usbekistan | Ouzbékistan | Uzbekistan | Oezbekistan | Uzbekistan | Usbequistão | Oezbekistan | Uzbekistan | Узбекистан",
+    "partidos": [
+      {
+        "fecha": "Wednesday, 17 June – Mexico City Stadium",
+        "a": "Uzbekistan",
+        "b": "Colombia",
+        "hl": "a"
+      },
+      {
+        "fecha": "Tuesday, 23 June – Houston Stadium",
+        "a": "Portugal",
+        "b": "Uzbekistan",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 27 June – Atlanta Stadium",
+        "a": "Congo DR",
+        "b": "Uzbekistan",
+        "hl": "b"
+      }
+    ]
+  },
+  "COL": {
+    "fed": "Federación Colombiana Fútbol",
+    "mlang": "Colombia | Kolumbien | Colombie | Colombia | Kolombiya | Kolumbia | Колумбия",
+    "partidos": [
+      {
+        "fecha": "Wednesday, 17 June – Mexico City Stadium",
+        "a": "Uzbekistan",
+        "b": "Colombia",
+        "hl": "b"
+      },
+      {
+        "fecha": "Tuesday, 23 June – Guadalajara Stadium",
+        "a": "Colombia",
+        "b": "Congo DR",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 27 June – Miami Stadium",
+        "a": "Colombia",
+        "b": "Portugal",
+        "hl": "a"
+      }
+    ]
+  },
+  "ENG": {
+    "fed": "The Football Association",
+    "mlang": "England | Angleterre | Inghilterra | Engeland | Inglaterra | Anglia | Англия",
+    "partidos": [
+      {
+        "fecha": "Wednesday, 17 June – Dallas Stadium",
+        "a": "England",
+        "b": "Croatia",
+        "hl": "a"
+      },
+      {
+        "fecha": "Tuesday, 23 June – Boston Stadium",
+        "a": "England",
+        "b": "Ghana",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 27 June – New York New Jersey Stadium",
+        "a": "Panama",
+        "b": "England",
+        "hl": "b"
+      }
+    ]
+  },
+  "CRO": {
+    "fed": "Hrvatski nogometni savez",
+    "mlang": "Hrvatska | Kroatien | Croatie | Croazia | Kroatië | Croacia | Chorwacja | Хорватия",
+    "partidos": [
+      {
+        "fecha": "Wednesday, 17 June – Dallas Stadium",
+        "a": "England",
+        "b": "Croatia",
+        "hl": "b"
+      },
+      {
+        "fecha": "Tuesday, 23 June – Toronto Stadium",
+        "a": "Panama",
+        "b": "Croatia",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 27 June – Philadelphia Stadium",
+        "a": "Croatia",
+        "b": "Ghana",
+        "hl": "a"
+      }
+    ]
+  },
+  "GHA": {
+    "fed": "Ghana Football Association",
+    "partidos": [
+      {
+        "fecha": "Wednesday, 17 June – Toronto Stadium",
+        "a": "Ghana",
+        "b": "Panama",
+        "hl": "a"
+      },
+      {
+        "fecha": "Tuesday, 23 June – Boston Stadium",
+        "a": "England",
+        "b": "Ghana",
+        "hl": "b"
+      },
+      {
+        "fecha": "Saturday, 27 June – Philadelphia Stadium",
+        "a": "Croatia",
+        "b": "Ghana",
+        "hl": "b"
+      }
+    ],
+    "mlang": "Ghana | Gana | Ghana | Гана"
+  },
+  "PAN": {
+    "fed": "Federación Panameña Fútbol",
+    "partidos": [
+      {
+        "fecha": "Wednesday, 17 June – Toronto Stadium",
+        "a": "Ghana",
+        "b": "Panama",
+        "hl": "b"
+      },
+      {
+        "fecha": "Tuesday, 23 June – Toronto Stadium",
+        "a": "Panama",
+        "b": "Croatia",
+        "hl": "a"
+      },
+      {
+        "fecha": "Saturday, 27 June – New York New Jersey Stadium",
+        "a": "Panama",
+        "b": "England",
+        "hl": "a"
+      }
+    ],
+    "mlang": "Panama | Panamá | Panama | Панама"
   }
 };

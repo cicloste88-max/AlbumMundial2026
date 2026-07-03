@@ -78,4 +78,5 @@ docs/                     BUILD-PLAN original, log de decisiones, pendientes
 | Fv3 libro 48 selecciones (datos v3) | ✅ | `145ae2a` |
 | Fv3.1 paridad visual referencia v3 | ✅ | `4a82274` |
 | Fv3.2 spread desktop + centrado | ✅ | `933b66b` |
+| Fv3.3 datos verificados 48 (fed/mlang/partidos/quali) | ✅ | ver `git log` |
 | F1 Supabase auth+sync · F4 PWA · req #2 imágenes | ⏸ pendientes | — |
