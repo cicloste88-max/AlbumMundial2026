@@ -55,6 +55,10 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
   ≤42% del ancho de página con zona de bandera 4:3 (ratio 1.30-1.36) y banda 20%,
   cero `<img>` con src vacío en portada/índice. Screenshots en `qa/screenshots/fv36/`.
   Los contextos con `page.route` usan `serviceWorkers:'block'`.
+- **verify-fv37-grid.mjs** (1280×800 + 360×740, MEX/HAI/CZE): invariante duro de la
+  parrilla — todos los cromos de jugador de una cara miden lo mismo (max/min ≤ 1.02),
+  bloque GROUP ≤ columna×1.15 y zona de bandera 1.30-1.36. Regresión permanente.
+  Screenshots en `qa/screenshots/fv37/`.
 
 ## Notas
 

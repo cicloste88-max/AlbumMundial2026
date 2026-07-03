@@ -321,17 +321,19 @@ const CSS = `:root{
   .roadto .rrow{padding:.6% 0}
 }
 
-/* --- app Fv3.6: bloque GROUP re-proporcionado. La fila del grupo (.ggrp) da al
-       bloque un carril propio: ~40% del ancho de página en móvil, ~35% en desktop
-       (gate fv35: los tiles verticales + cover recortaban los laterales de las
-       banderas w640 y el bloque salía enorme). Zona de bandera 4:3 fija + cover
-       (recorte lateral <=11% en banderas 3:2, 0% en 4:3), banda de código al 20%,
-       tile resultante ~1.66. Los tiles 18-20 de la fila absorben el resto. --- */
-.grid.ggrp{grid-template-columns:var(--gbw) 1fr 1fr 1fr; --gbw:calc(var(--w)*.40)}
-@media (min-width:900px){ .grid.ggrp{--gbw:calc(var(--w)*.35)} }
-.grid.ggrp .tile{align-self:start}
-.gbadge{padding:2% 0 0}
-.gbadge .gt{margin-bottom:calc(var(--gbw)*.05)}
+/* --- app Fv3.6/Fv3.7: bloque GROUP. Fv3.6 fijó el encaje de bandera (zona 4:3 +
+       cover, recorte lateral <=11% en 3:2; banda de código 20% en absolute porque
+       como flex item su texto vertical estiraba el tile). Fv3.7 aplica la ley del
+       álbum físico — LA PARRILLA DE CROMOS MANDA: la fila del grupo usa el grid
+       base de 4 columnas, el bloque ocupa 1 columna (izquierda) y los cromos
+       18-20 conservan el ancho estándar (invariante: todos los cromos de jugador
+       de la página miden lo mismo). El bloque se encaja en su columna (título en
+       1 línea sobre el 2x2, tiles de (columna − gap)/2) y se centra en vertical.
+       --gbw ≈ ancho de columna del grid base: (94.4% − 3 gaps del 2%) / 4. --- */
+.grid.ggrp{--gbw:calc(var(--w)*.2218)}
+.grid.ggrp .gbadge{align-self:center; min-width:0}
+.gbadge{padding:0}
+.gbadge .gt{margin-bottom:calc(var(--gbw)*.06)}
 .gtiles{flex:0 0 auto; min-height:auto; margin-top:0; gap:calc(var(--gbw)*.06); grid-auto-rows:auto}
 /* la banda va en absolute: si fuera flex item, su texto vertical estira el tile
    por encima del alto 4:3 de la bandera y deforma la zona (stretch del cross-axis) */

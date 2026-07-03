@@ -175,6 +175,27 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   saltarse la interceptación). Screenshots del gate en `qa/screenshots/fv36/`.
   Regresión completa: 14/14 + 24/24 + 57/57 + 24/24 + 18/18 + 15/15.
 
+## Fv3.7 — La parrilla manda: cromos 18-20 a tamaño completo, GROUP en 1 columna
+
+- Gate fv36: los cromos 18/19/20 quedaron menores que el resto (trade-off del carril
+  `.ggrp` al 40/35%, avisado en el status). San midió el álbum físico y corrigió la
+  spec: **la parrilla de cromos manda** — todos los cromos de jugador de una página
+  miden lo mismo y el bloque GROUP se adapta al hueco de UNA columna.
+- Fix (cambio mínimo): `.grid.ggrp` deja de definir template propio y vuelve al grid
+  base de 4 columnas; el bloque ocupa la columna 1 (izquierda) y 18-20 recuperan el
+  ancho estándar. `--gbw` pasa a ≈ ancho de columna (`.2218*--w`) — todas las medidas
+  internas del bloque (título, gap, banda) ya colgaban de esa variable. Bloque centrado
+  en vertical (`align-self:center`; sobra altura: 115 vs 169 desktop). Se mantienen
+  intactos: zona bandera 4:3 + cover, banda 20% absolute, `GROUP_FIT` conmutable.
+- **Invariante duro nuevo** (regresión permanente): max/min de anchos de cromos de
+  jugador de una cara ≤ 1.02 (slot 13 `.crest` excluido: apaisado por diseño), y
+  bloque GROUP ≤ columna×1.15. `qa/verify-fv37-grid.mjs` (24 checks: L y R de
+  MEX/HAI/CZE en 1280×800 y 360×740 + ratio bandera 1.30-1.36 + screenshots fv37/).
+- Ajuste de suite (no de app): fv36 medía la banda contra el border-box del tile; con
+  tiles pequeños el marco de 3px del `.me` pesa más (0.166) — ahora mide contra el
+  content-box (0.20 exacto), que es la intención del check.
+- Regresión completa: 24/24 (fv37) + 57/57 + 24/24 + 18/18 + 15/15 + 24/24 + 14/14.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

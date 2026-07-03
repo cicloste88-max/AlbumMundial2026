@@ -55,6 +55,10 @@ docs/                     BUILD-PLAN original, log de decisiones, pendientes
   concurrente sobre la misma clave se pisan; bug F0 ya corregido).
 - **Estados**: tap cicla `falta → tengo → repe1..repe5 → falta` (MAX_REPES=5); stepper
   plus/minus. CSS espera `data-state` en el tile y `.badge-rep` con `×N`.
+- **Ley del álbum (Fv3.7, invariante duro)**: la parrilla de cromos manda — todos los
+  cromos de jugador de una página miden LO MISMO (max/min anchos ≤ 1.02, slot 13
+  `.crest` excluido); los bloques decorativos (GROUP) se encajan en el hueco de una
+  columna del grid base. QA permanente: `qa/verify-fv37-grid.mjs` (`npm run qa:grid`).
 - **Motor UI**: builders que devuelven HTML string + delegación de eventos + rebuild de
   innerHTML por estado (patrón heredado del diseño de San). No migrar a JSX granular sin
   paquete que lo pida.
@@ -83,4 +87,5 @@ docs/                     BUILD-PLAN original, log de decisiones, pendientes
 | Fv3.4 bloque GROUP tiles + header wordmark/fed + fix CZE | ✅ | ver `git log` |
 | Fv3.5 banderas w640 `?v=2` + layout móvil quali/GROUP + QA geo | ✅ | ver `git log` |
 | Fv3.6 tiles GROUP 4:3 a escala + PWA instalable + fix img vacías | ✅ | ver `git log` |
+| Fv3.7 cromos 18-20 a tamaño completo + GROUP en 1 columna | ✅ | ver `git log` |
 | F1 Supabase auth+sync · req #2 imágenes | ⏸ pendientes | — |

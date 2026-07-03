@@ -58,8 +58,9 @@ const groupGeom = (p) => p.evaluate(() => {
   const tiles = [...root.querySelectorAll('.gtile')].map(t => {
     const img = t.querySelector('img') || t.querySelector('.noflag');
     const band = t.querySelector('.gband');
-    const ir = img.getBoundingClientRect(), tr = t.getBoundingClientRect(), br = band.getBoundingClientRect();
-    return { imgRatio: ir.width / ir.height, bandFrac: br.width / tr.width, tag: img.tagName };
+    const ir = img.getBoundingClientRect(), br = band.getBoundingClientRect();
+    // banda vs content-box (clientWidth): el marco del tile propio (.me) no cuenta
+    return { imgRatio: ir.width / ir.height, bandFrac: br.width / t.clientWidth, tag: img.tagName };
   });
   return { widthFrac: gb.width / page.width, tiles };
 });

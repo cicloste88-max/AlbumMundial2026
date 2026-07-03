@@ -12,7 +12,8 @@
     "qa:verif": "node qa/verify-fv33-verif.mjs",
     "qa:visual": "node qa/verify-fv34-visual.mjs",
     "qa:geo": "node qa/verify-fv35-geo.mjs",
-    "qa:pwa": "node qa/verify-fv36-pwa.mjs"
+    "qa:pwa": "node qa/verify-fv36-pwa.mjs",
+    "qa:grid": "node qa/verify-fv37-grid.mjs"
   },
   "dependencies": {
     "next": "16.2.9",
