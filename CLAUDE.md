@@ -5,6 +5,10 @@ App Next.js (App Router + TypeScript, sin Tailwind) en `album26/`, desplegada en
 (proyecto `album-mundial2026`, Root Directory = `album26`, auto-deploy al pushear `main`).
 Idioma de trabajo: **castellano**.
 
+**Estado: v1.0.0 EN PRODUCCIÓN** (Fv3.8, gate humano de San OK en desktop y
+Safari/iOS). Documentación de usuario en `README.md` (raíz y `album26/`), catálogo de
+errores y guardarraíles en `docs/ERRORES.md`.
+
 ## Cómo se trabaja aquí (formato acordado con San/orquestador)
 
 1. Cada fase llega como **paquete** (chat u orquestador). Se sigue al detalle; si falta un
@@ -38,9 +42,10 @@ album26/                  la app (Root Directory en Vercel)
 │   └── teams.ts          LEGACY (datos F0 Grupo A)
 ├── public/fonts/fwc26.otf · manifest.webmanifest · sw.js (Fv3.6: PWA instalable,
 │                         SW registrado solo en prod, iconos 192/512 en bucket flags/icons/)
-├── qa/                   suites Playwright versionadas (ver qa/README.md)
+├── qa/                   suites Playwright versionadas fv31..fv38 (ver qa/README.md)
 └── supabase/schema.sql   F1 (tabla inventory + RLS) — AÚN SIN USAR
-docs/                     BUILD-PLAN original, log de decisiones, pendientes
+docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
+                          ERRORES (catálogo con guardarraíles) · PENDIENTES
 ```
 
 ## Convenciones técnicas y trampas conocidas
@@ -95,4 +100,5 @@ docs/                     BUILD-PLAN original, log de decisiones, pendientes
 | Fv3.6 tiles GROUP 4:3 a escala + PWA instalable + fix img vacías | ✅ | ver `git log` |
 | Fv3.7 cromos 18-20 a tamaño completo + GROUP en 1 columna | ✅ | ver `git log` |
 | Fv3.8 iOS/Safari: libro móvil con ventana ±2 + sombra ::before + SW guardas | ✅ | ver `git log` |
+| **v1.0.0 PRODUCCIÓN** — gate humano OK (desktop + Safari/iOS) | ✅ | `e3c1705` |
 | F1 Supabase auth+sync · req #2 imágenes | ⏸ pendientes | — |

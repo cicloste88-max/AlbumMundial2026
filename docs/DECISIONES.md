@@ -230,6 +230,18 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   ventana, guardas del SW). fv31/fv32 actualizadas (asumían 98 hojas). Regresión:
   11/11 + 57/57 + 24/24 + 18/18 + 15/15 + 24/24 + 14/14 + 24/24.
 
+## v1.0.0 — declarada EN PRODUCCIÓN (2026-07-04)
+
+- Gate humano de San tras Fv3.8: la app funciona en desktop y en Safari/iOS
+  ("Ya funciona"). Versión del paquete `album26` elevada a **1.0.0** y tag `v1.0.0`
+  sobre el SHA de Fv3.8 + docs (`git log`).
+- Pasada completa de documentación: README raíz y de la app reescritos (estado
+  productivo, estructura, scripts, invariantes), nuevo `docs/ERRORES.md` (catálogo
+  de errores con causa raíz, fix y guardarraíl), PENDIENTES y CLAUDE.md al día.
+- Queda pendiente (sin fecha): F1 Supabase auth+sync, requisito #2 (imágenes de
+  cromos), datos en revisión (fed 6, mlang IRN, quali 47), typos de checklist a
+  validar contra el álbum físico, y retirada del legacy F0 tras gate.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

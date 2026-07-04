@@ -17,9 +17,15 @@ que sean reproducibles (antes vivían en el scratchpad efímero de la sesión de
 # desde album26/
 npm run build && PORT=3000 npm run start &   # o el puerto que uses
 
-QA_URL=http://localhost:3000 node qa/verify-fv31-movil.mjs    # móvil (57 checks)
-QA_URL=http://localhost:3000 node qa/verify-fv32-spread.mjs   # spread desktop (24 checks)
+# atajos npm (equivalen a QA_URL=http://localhost:3000 node qa/verify-…)
+npm run qa:movil    # fv31 (57)     npm run qa:geo   # fv35 (24)
+npm run qa:spread   # fv32 (24)     npm run qa:pwa   # fv36 (14)
+npm run qa:verif    # fv33 (18)     npm run qa:grid  # fv37 (24)
+npm run qa:visual   # fv34 (15)     npm run qa:ios   # fv38 (11)
 ```
+
+Las 8 suites en verde son la regresión completa exigida antes de cada push a `main`
+(estado v1.0: 57+24+18+15+24+14+24+11 = 187 checks).
 
 Variables: `QA_URL` (default `http://localhost:3000/`), `QA_CHROME` (binario Chromium),
 `QA_OUT` (carpeta de screenshots, default `./qa-shots`).
