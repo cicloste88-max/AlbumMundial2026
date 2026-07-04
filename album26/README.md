@@ -20,7 +20,7 @@ npm run qa:visual  # fv34 · header + bloque GROUP + screenshots de gate (15)
 npm run qa:geo     # fv35 · geometría móvil 360×740 (24)
 npm run qa:pwa     # fv36 · manifest/SW/iconos + img sin src (14)
 npm run qa:grid    # fv37 · invariante "la parrilla manda" (24)
-npm run qa:ios     # fv38 · presupuesto de composición iOS del libro móvil (11)
+npm run qa:ios     # fv38 · presupuesto iOS + safe-areas nativas (13)
 npm run qa:auth    # fv40 · auth + progreso en nube con mocks (19)
 ```
 

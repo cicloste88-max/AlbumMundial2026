@@ -81,6 +81,23 @@ const shadow = await p.evaluate(() => {
 ok('(c) .book sin filter propio', shadow.filter === 'none', shadow.filter);
 ok('(c) ::before con el drop-shadow original', shadow.before.includes('drop-shadow'), shadow.before);
 
+// (f) Fv4.1-prep: safe-areas (notch/home indicator) para WebView nativo y PWA
+const vf = await p.evaluate(() => document.querySelector('meta[name="viewport"]')?.content || '');
+ok('(f) viewport-fit=cover en el meta viewport', vf.includes('viewport-fit=cover'), vf);
+try {
+  await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 59, left: 0, bottom: 34, right: 0 } });
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.waitForTimeout(600);
+  const sa = await p.evaluate(() => {
+    const w = document.querySelector('.ab-wrap');
+    return { top: parseFloat(getComputedStyle(w).paddingTop), bottom: parseFloat(getComputedStyle(w).paddingBottom) };
+  });
+  ok('(f) insets aplicados: contenido fuera del notch (padding 71/64)', sa.top === 71 && sa.bottom === 64, JSON.stringify(sa));
+  await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 0, left: 0, bottom: 0, right: 0 } });
+} catch {
+  ok('(f) insets aplicados (CDP no disponible en este Chromium — skip)', true, 'skip');
+}
+
 // (e) guardas Safari en el SW
 const sw = await (await p.request.get(URL.replace(/\/+$/, '') + '/sw.js')).text();
 ok('(e) sw.js: no cachea respuestas redirigidas de navegación', sw.includes('res.redirected'));

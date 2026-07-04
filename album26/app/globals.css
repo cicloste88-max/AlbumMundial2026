@@ -13,6 +13,9 @@
 }
 *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
 html,body{margin:0;}
-body{background:#e7e3d6;font-family:var(--font-text);color:var(--ink-900);display:flex;justify-content:center;min-height:100vh;}
+/* Fv4.1-prep: fondo del documento oscuro (el del álbum) — el beige F0 solo se
+   veía en el overscroll/bordes y en WebView nativo destellaría; overscroll
+   contenido para que el pull-to-refresh no arrastre la app (paridad nativa) */
+body{background:#191228;font-family:var(--font-text);color:var(--ink-900);display:flex;justify-content:center;min-height:100vh;overscroll-behavior-y:none;}
 button{font-family:inherit;}
 .page{width:390px;max-width:100%;background:#F4F1E6;min-height:880px;position:relative;overflow:hidden;padding-bottom:20px;}

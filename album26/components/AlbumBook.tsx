@@ -62,7 +62,11 @@ const CSS = `:root{
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
 .ab-wrap{width:100%; margin:0; background:#191228; font-family:var(--font-barlow),system-ui,sans-serif; color:var(--ink-dark);
-     display:flex; flex-direction:column; align-items:center; gap:12px; padding:12px 0 30px; min-height:100vh}
+     display:flex; flex-direction:column; align-items:center; gap:12px; padding:12px 0 30px; min-height:100vh;
+     /* Fv4.1-prep: safe-areas (notch/home indicator) — en navegador normal env()=0
+        y el padding queda idéntico; si env no existe, vale la línea anterior */
+     padding:calc(12px + env(safe-area-inset-top, 0px)) env(safe-area-inset-right, 0px)
+             calc(30px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px)}
 .demo-bar{width:var(--w); color:#B7ABDD; font-size:12.5px; text-align:center; line-height:1.35}
 .demo-bar b{color:#fff}
 
@@ -842,7 +846,7 @@ export default function AlbumBook() {
           id="ab-toast"
           role="alert"
           style={{
-            position: 'fixed', left: '50%', bottom: 18, transform: 'translateX(-50%)',
+            position: 'fixed', left: '50%', bottom: 'calc(18px + env(safe-area-inset-bottom, 0px))', transform: 'translateX(-50%)',
             zIndex: 999, background: '#C8481F', color: '#fff', padding: '10px 16px',
             borderRadius: 10, fontWeight: 700, fontSize: 13.5, maxWidth: '92vw',
             fontFamily: 'var(--font-barlow), system-ui, sans-serif',

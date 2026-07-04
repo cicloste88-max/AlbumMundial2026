@@ -19,6 +19,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#1E1B33',
+  // Fv4.1-prep: el lienzo llega hasta los bordes físicos (notch/home indicator)
+  // y el contenido se retira con env(safe-area-inset-*) — imprescindible para el
+  // WebView nativo y la PWA standalone; en navegador normal los insets son 0.
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

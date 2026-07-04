@@ -50,8 +50,42 @@ solo con src válido (el CSS `.imgslot` sigue en su sitio).
   aterrice en el álbum: añadir la URL del álbum a Auth → URL Configuration
   (decisión suya, es setting global).
 
-## Fv4.1 — Empaquetado nativo: NO EMPEZAR sin paquete
-- Decisión de San: primero web (Fv4.0), después el empaquetado tipo app nativa.
+## Fv4.1 — Empaquetado nativo iOS + Android (análisis hecho, falta paquete)
+
+**Recomendación** (paridad total "funciona y se ve exactamente igual"):
+**Capacitor en modo remoto** — el shell nativo carga la URL de producción en un
+WebView (WKWebView/Android WebView). Misma app, mismos deploys (las mejoras web
+llegan sin pasar por las stores), cookies de sesión de primera parte (mismo
+dominio) y la PWA ya montada. Alternativa solo-Android: TWA con Bubblewrap
+(requiere `assetlinks.json` en el dominio). Descartado React Native/rewrite:
+no puede ser "exactamente igual" sin rehacer la UI.
+
+**Ya preparado en el repo** (Fv4.1-prep, sin diferencia visual — diff 0 px):
+- PWA completa (manifest standalone, SW con guardas, iconos en bucket).
+- `viewport-fit=cover` + safe-areas con `env(safe-area-inset-*)` en libro, login
+  y toast (verificado con insets emulados por CDP: notch 59/34 → padding 71/64);
+  body oscuro + `overscroll-behavior` (sin destello beige ni pull-to-refresh).
+- Sesión por cookies del propio dominio (funciona en WebView sin third-party).
+- QA guardarraíl en `qa:ios` (viewport-fit + insets aplicados).
+
+**Falta en el repo (el paquete Fv4.1)**: `capacitor.config.ts` (appId + server.url),
+plataformas `ios/` y `android/` generadas (`npx cap add`), StatusBar #1E1B33,
+splash, zoom desactivado en el shell (no en la web) y, opcional, deep link para
+el enlace de confirmación de email. El sandbox NO puede compilar (ni Xcode/macOS
+ni Android SDK): el repo queda listo para `npx cap sync` + build local.
+
+**Necesita San (fuera del repo)**:
+- Apple Developer Program (99 USD/año) + firma; compilar SOLO en macOS con Xcode.
+- Google Play Console (25 USD única vez); Android Studio/gradle para el AAB.
+- Decidir `appId` (p. ej. `com.<tuorg>.album26`) y nombre visible.
+- Icono maestro **1024×1024** (las stores lo exigen; hoy el máximo es 512) y splash.
+- URL de producción estable (la del proyecto Vercel) para el shell remoto.
+- **Política de privacidad publicada** (obligatoria en ambas stores: hay cuentas).
+- Fichas de store (textos/screenshots) y revisión de Apple — riesgo conocido
+  guideline 4.2 (apps "solo web"): se mitiga destacando cuenta + sincronización
+  multidispositivo + instalación PWA; decisión/apetito de riesgo suyo.
+- Si TWA Android: SHA-256 del certificado de firma para el `assetlinks.json`
+  (ese fichero sí lo añado yo al repo cuando llegue).
 
 ## F4 — PWA: ✅ instalable desde Fv3.6
 - Manifest completo (name/short_name/display standalone/colores `#1E1B33`), iconos

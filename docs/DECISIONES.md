@@ -288,6 +288,26 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   JAMÁS definir `QA_AUTH_MOCK` en Vercel. El e2e real (signup, confirmación, RLS,
   multidispositivo) se valida en prod.
 
+## Fv4.1-prep — Groundwork para el empaquetado nativo (petición directa de San)
+
+- San pidió "optimiza y revisa qué es necesario" para app nativa iOS+Android con
+  paridad total. El análisis completo (recomendación: Capacitor en modo remoto;
+  checklist repo vs. San) quedó en PENDIENTES.md — el scaffolding Capacitor es el
+  paquete Fv4.1 (necesita appId, icono 1024, cuentas de developer y build local:
+  el sandbox no tiene Xcode ni Android SDK).
+- Groundwork aplicado (restricción: cero diferencia visual, verificada con diff
+  de píxeles 0/0/0/0 en portada/pliego/login/desktop):
+  - `viewport-fit=cover` + `env(safe-area-inset-*)` progresivo (doble declaración
+    de padding: si env no existe vale la base) en `.ab-wrap`, `.lg-wrap` y el
+    toast — sin esto, en WebView nativo/PWA standalone el contenido queda bajo el
+    notch y el home indicator. Verificado con `Emulation.setSafeAreaInsetsOverride`
+    (CDP): insets 59/34 → padding 71/64 y el nav arranca bajo el notch.
+  - body a `#191228` (el beige F0 solo asomaba en overscroll y en WebView
+    destellaría) + `overscroll-behavior-y:none` (sin pull-to-refresh en el shell).
+- QA: +2 checks en `qa:ios` (viewport-fit=cover en el meta + insets aplicados con
+  CDP, con skip documentado si el Chromium no soporta la emulación). Regresión
+  completa: 57+24+18+15+24+14+24+13+19 = 208/208.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

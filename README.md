@@ -67,7 +67,7 @@ npm run qa:visual  # header/bloque GROUP + screenshots de gate (15)
 npm run qa:geo     # geometría móvil: solapes/desbordes/banderas ?v=2 (24)
 npm run qa:pwa     # manifest/SW/iconos + img sin src (14)
 npm run qa:grid    # invariante "la parrilla manda" (24)
-npm run qa:ios     # presupuesto de composición iOS del libro móvil (11)
+npm run qa:ios     # presupuesto composición iOS + safe-areas nativas (13)
 npm run qa:auth    # auth + progreso en nube con mocks (19)
 ```
 

@@ -25,12 +25,12 @@ npm run build && QA_AUTH_MOCK=1 PORT=3000 npm run start &   # o el puerto que us
 npm run qa:movil    # fv31 (57)     npm run qa:geo   # fv35 (24)
 npm run qa:spread   # fv32 (24)     npm run qa:pwa   # fv36 (14)
 npm run qa:verif    # fv33 (18)     npm run qa:grid  # fv37 (24)
-npm run qa:visual   # fv34 (15)     npm run qa:ios   # fv38 (11)
+npm run qa:visual   # fv34 (15)     npm run qa:ios   # fv38 (13)
 npm run qa:auth     # fv40 (19)
 ```
 
 Las 9 suites en verde son la regresión completa exigida antes de cada push a `main`
-(estado Fv4.0: 57+24+18+15+24+14+24+11+19 = 206 checks).
+(estado Fv4.0: 57+24+18+15+24+14+24+13+19 = 208 checks).
 
 Variables: `QA_URL` (default `http://localhost:3000/`), `QA_CHROME` (binario Chromium),
 `QA_OUT` (carpeta de screenshots, default `./qa-shots`).

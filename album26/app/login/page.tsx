@@ -9,6 +9,8 @@ import { getSupabase, supabaseConfigured } from '@/lib/supabase/client';
 const CSS = `
 .lg-wrap{min-height:100vh; background:#1E1B33; display:flex; flex-direction:column;
   align-items:center; justify-content:center; padding:24px 16px;
+  padding:calc(24px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px))
+          calc(24px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
   font-family:var(--font-barlow),system-ui,sans-serif}
 .lg-card{width:min(92vw,400px); background:#F6F3EC; border-radius:12px; overflow:hidden;
   box-shadow:0 14px 26px rgba(0,0,0,.5)}
