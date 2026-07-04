@@ -86,7 +86,15 @@ const CSS = `:root{
 
 /* ===== libro ===== */
 .book{position:relative; width:var(--w); aspect-ratio:1008/1204; perspective:2600px;
-      touch-action:pan-y; filter:drop-shadow(0 14px 26px rgba(0,0,0,.5))}
+      touch-action:pan-y}
+/* Fv3.8 (iOS): la sombra sale de un ::before plano con el MISMO filter
+   drop-shadow de siempre (render bit a bit idéntico) en vez de aplicarla al
+   .book entero — el filter sobre el libro obligaba a rasterizar a textura el
+   subárbol 3D completo en cada frame. El ::before es un rect opaco con la
+   misma silueta (radius 5px) y queda tapado por las hojas (z>=10). El
+   drop-shadow del spread desktop se conserva (solo hay 1-3 vistas montadas). */
+.book::before{content:''; position:absolute; inset:0; z-index:0; border-radius:5px;
+      background:var(--paper); filter:drop-shadow(0 14px 26px rgba(0,0,0,.5))}
 .sheet{position:absolute; inset:0; transform-style:preserve-3d; transform-origin:left center;
        transition:transform .62s cubic-bezier(.42,.05,.18,1)}
 .sheet.noanim{transition:none}
@@ -530,14 +538,20 @@ function statusHTML(page: number, invs: Record<string, InvMap>): string {
 
 function bookHTML(page: number, invs: Record<string, InvMap>): string {
   let sheets = '';
-  for (let i = 0; i < TOTAL_PAGES; i++) {
+  // Fv3.8 (iOS): solo se montan las hojas actual ±2. Las demás NUNCA son
+  // visibles (quedan cubiertas por el z-order o volteadas tras la actual y sin
+  // animación de paso), pero en Safari/iOS cada cara 3D con backface-visibility
+  // es una capa de composición propia: 98 hojas ≈ 200-300 capas a @3x → crash
+  // de WebContent por memoria y "Ha ocurrido un problema repetidamente".
+  // La fórmula de z-index usa valores absolutos por índice, así que la ventana
+  // conserva el apilamiento exacto del libro completo.
+  const from = Math.max(0, page - 2), to = Math.min(TOTAL_PAGES - 1, page + 2);
+  for (let i = from; i <= to; i++) {
     const flipped = i < page;
     const z = flipped ? 10 + i : 10 + (TOTAL_PAGES - i);
-    // lazy mount: solo la hoja actual ±2 lleva contenido; el resto placeholders
-    const body = Math.abs(i - page) <= 2 ? pageHTML(i, invs) : '';
     sheets += '<div class="sheet noanim' + (flipped ? ' flipped' : '') + '" data-page="' + i + '"'
       + (i === page ? ' data-current="1"' : '') + ' style="z-index:' + z + '">'
-      + '<div class="face front">' + body + '</div>'
+      + '<div class="face front">' + pageHTML(i, invs) + '</div>'
       + '<div class="face back"><div class="bmark"><svg viewBox="0 0 1000 759"><use href="#g6"/></svg></div></div>'
       + '</div>';
   }

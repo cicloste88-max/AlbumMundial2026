@@ -92,7 +92,8 @@ await p.screenshot({ path: `${OUT}/fv32_cuw_spread.png` });
 // ===== cambio a MÓVIL en la misma sesión: misma clave de storage =====
 await p.setViewportSize({ width: 390, height: 844 });
 await p.waitForTimeout(300);
-ok('móvil tras resize: libro de hojas (.sheet) presente', await p.evaluate(() => document.querySelectorAll('.sheet').length) === 98);
+// Fv3.8: el libro monta solo las hojas actual ±2 (presupuesto de capas iOS)
+ok('móvil tras resize: libro de hojas (.sheet) presente (ventana ±2)', await p.evaluate(() => { const n = document.querySelectorAll('.sheet').length; return n >= 3 && n <= 5; }));
 await clickChip('CUW'); await p.waitForTimeout(120);
 ds = await p.evaluate(() => document.querySelector('[data-tile="CUW-2"]').dataset.state);
 ok('móvil: CUW-2 sigue tengo (misma clave storage)', ds === 'tengo', ds);

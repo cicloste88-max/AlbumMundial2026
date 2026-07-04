@@ -38,8 +38,10 @@ await p.click('[data-goto="1"]'); await p.waitForTimeout(80);
 ok('GRUPOS -> hoja 1 (48 selecciones · 12 grupos)', (await visText()).includes('48 selecciones · 12 grupos') && await curPage() === 1);
 const nGroups = await p.evaluate(() => document.querySelector('[data-current] .face.front').querySelectorAll('.gcard').length);
 ok('índice con 12 grupos (.gcard)', nGroups === 12, `gcards=${nGroups}`);
+// Fv3.8 (iOS): el libro monta SOLO las hojas actual ±2 (98 hojas 3D = ~300
+// capas de composición → crash de WebContent en Safari/iOS)
 const totalSheets = await p.evaluate(() => document.querySelectorAll('.sheet').length);
-ok('98 hojas (.sheet)', totalSheets === 98, `sheets=${totalSheets}`);
+ok('hojas montadas = actual ±2 (3-5 .sheet, no 98)', totalSheets >= 3 && totalSheets <= 5, `sheets=${totalSheets}`);
 const mounted = await p.evaluate(() => [...document.querySelectorAll('.sheet .face.front')].filter(f => f.innerHTML.trim() !== '').length);
 ok('lazy mount: solo ±2 montadas (<=5)', mounted <= 5, `mounted=${mounted}`);
 const CODES = await p.evaluate(() => [...document.querySelectorAll('#chips button')].map(c => c.textContent));

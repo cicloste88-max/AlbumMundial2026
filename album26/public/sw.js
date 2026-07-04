@@ -2,7 +2,7 @@
 //  - cache-first para /_next/static (inmutable: los nombres llevan hash de build)
 //  - network-first para el documento (con fallback a caché para abrir offline)
 //  - NADA más: las banderas y cualquier request cross-origin no se tocan ni precachean
-const CACHE = 'album26-v2';
+const CACHE = 'album26-v3';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -24,18 +24,30 @@ self.addEventListener('fetch', (e) => {
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy));
+        // Safari rechaza servir a una navegación una respuesta redirigida
+        // sacada de caché: solo se cachean respuestas 200 sin redirección
+        if (res.ok && !res.redirected) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+        }
         return res;
-      }).catch(() => caches.match(req).then((hit) => hit || caches.match('/')))
+      }).catch(() =>
+        caches.match(req)
+          .then((hit) => hit || caches.match('/'))
+          // nunca responder undefined (Safari lo muestra como error de carga)
+          .then((hit) => hit || new Response('Sin conexión — el álbum necesita red para la primera carga.',
+            { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }))
+      )
     );
     return;
   }
   if (url.pathname.startsWith('/_next/static/')) {
     e.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy));
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+        }
         return res;
       }))
     );

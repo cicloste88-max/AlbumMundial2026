@@ -196,6 +196,40 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   content-box (0.20 exacto), que es la intención del check.
 - Regresión completa: 24/24 (fv37) + 57/57 + 24/24 + 18/18 + 15/15 + 24/24 + 14/14.
 
+## Fv3.8 — Compatibilidad iOS/Safari: presupuesto de composición del libro móvil
+
+- Reporte de San: Safari iOS (moderno) dejaba de cargar la app con "problema
+  repetidamente" — firma de crash de WebContent por memoria. Diagnóstico medido
+  (CDP LayerTree, viewport iPhone @3x): el libro móvil montaba SIEMPRE las 98 hojas
+  como capas 3D (196 caras con backface-visibility + preserve-3d + rotateY ⇒ capa de
+  composición cada una) y `.book` llevaba `filter:drop-shadow` que rasteriza a
+  textura el subárbol 3D completo. En Chromium: **307 capas / ~189MB** de backing
+  tras 4 interacciones; WebKit agrupa peor ⇒ peor. Además cada tap reconstruía el
+  innerHTML de las 98 hojas (churn de capas en cada interacción).
+- Fix (restricción de San: cero diferencia visual):
+  - `bookHTML` monta SOLO las hojas actual ±2 (3-5): las demás nunca son visibles
+    (cubiertas por z-order o volteadas, sin animación de paso). La fórmula de
+    z-index ya usaba valores absolutos por índice ⇒ apilamiento intacto. El rebuild
+    por tap pasa de 98 hojas a ≤5 (mitiga el churn sin tocar el patrón del motor).
+  - Sombra: el `drop-shadow` pasa a un `::before` plano con la misma silueta
+    (radius 5px) — mismo filtro, render idéntico, sin rasterizar el 3D. El primer
+    intento con `box-shadow` se descartó: el halo difumina distinto y el diff de
+    píxeles lo delató (~0.4% con delta alto en el anillo). El drop-shadow del
+    spread desktop se conserva (1-3 vistas montadas, y en las vistas de página
+    suelta el box-shadow sí cambiaría la silueta).
+  - `sw.js` endurecido para Safari: no se cachean respuestas de navegación
+    redirigidas (Safari se niega a servirlas luego), nunca `respondWith(undefined)`
+    offline (Response 503 texto), solo se cachea `res.ok`; caché `album26-v3`.
+- Verificación: diff de píxeles before/after con capturas deterministas — desktop
+  **0 píxeles** de diferencia; móvil 29-81 px de 1.3M (0.002-0.006%, franjas de
+  antialiasing de 1px en los bordes del libro). Después: **19-27 capas / 11-15MB**
+  (≈12× menos memoria). iOS <16 queda fuera de soporte consciente (color-mix/cqw);
+  el dispositivo de San es moderno.
+- QA permanente: `qa/verify-fv38-ios.mjs` (`npm run qa:ios`, 11 checks: ventana ±2,
+  presupuesto ≤60 capas/≤60MB vía CDP, sombra sin filter en .book, navegación por
+  ventana, guardas del SW). fv31/fv32 actualizadas (asumían 98 hojas). Regresión:
+  11/11 + 57/57 + 24/24 + 18/18 + 15/15 + 24/24 + 14/14 + 24/24.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

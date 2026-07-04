@@ -59,6 +59,12 @@ docs/                     BUILD-PLAN original, log de decisiones, pendientes
   cromos de jugador de una página miden LO MISMO (max/min anchos ≤ 1.02, slot 13
   `.crest` excluido); los bloques decorativos (GROUP) se encajan en el hueco de una
   columna del grid base. QA permanente: `qa/verify-fv37-grid.mjs` (`npm run qa:grid`).
+- **Presupuesto iOS del libro móvil (Fv3.8, invariante duro)**: `bookHTML` monta SOLO
+  las hojas actual ±2 — montar las 98 crashea Safari/iOS por memoria (cada cara 3D es
+  una capa de composición; ~300 capas/189MB a @3x). La sombra del libro va en
+  `.book::before` (drop-shadow sobre rect plano, render idéntico); NO devolver el
+  `filter` al `.book` ni montar el libro completo. QA: `qa/verify-fv38-ios.mjs`
+  (`npm run qa:ios`, presupuesto ≤60 capas/≤60MB vía CDP).
 - **Motor UI**: builders que devuelven HTML string + delegación de eventos + rebuild de
   innerHTML por estado (patrón heredado del diseño de San). No migrar a JSX granular sin
   paquete que lo pida.
@@ -88,4 +94,5 @@ docs/                     BUILD-PLAN original, log de decisiones, pendientes
 | Fv3.5 banderas w640 `?v=2` + layout móvil quali/GROUP + QA geo | ✅ | ver `git log` |
 | Fv3.6 tiles GROUP 4:3 a escala + PWA instalable + fix img vacías | ✅ | ver `git log` |
 | Fv3.7 cromos 18-20 a tamaño completo + GROUP en 1 columna | ✅ | ver `git log` |
+| Fv3.8 iOS/Safari: libro móvil con ventana ±2 + sombra ::before + SW guardas | ✅ | ver `git log` |
 | F1 Supabase auth+sync · req #2 imágenes | ⏸ pendientes | — |

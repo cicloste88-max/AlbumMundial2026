@@ -59,6 +59,11 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
   parrilla — todos los cromos de jugador de una cara miden lo mismo (max/min ≤ 1.02),
   bloque GROUP ≤ columna×1.15 y zona de bandera 1.30-1.36. Regresión permanente.
   Screenshots en `qa/screenshots/fv37/`.
+- **verify-fv38-ios.mjs** (390×844 @3x, iPhone-like): presupuesto iOS/Safari del
+  libro móvil — solo hojas actual ±2 montadas, ≤60 capas de composición y ≤60MB de
+  backing (CDP LayerTree) tras varios pasos, sombra en `::before` sin `filter` en
+  `.book`, navegación por ventana y guardas Safari del service worker. Regresión
+  permanente (la violación crashea WebContent en iOS: "problema repetidamente").
 
 ## Notas
 
