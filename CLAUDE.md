@@ -30,20 +30,28 @@ errores y guardarraíles en `docs/ERRORES.md`.
 
 ```
 album26/                  la app (Root Directory en Vercel)
-├── app/                  layout (fuentes next/font: Inter, Saira, Baloo 2, Barlow SC),
-│                         globals.css (F0), page.tsx → <AlbumBook/>
+├── app/                  layout (fuentes next/font, PWA meta, registro SW en prod),
+│                         globals.css (F0), page.tsx → <AlbumBook/>,
+│                         login/ (Fv4.0: Entrar/Registrarse) · auth/ (confirm+callback)
+├── proxy.ts              Fv4.0: sesión @supabase/ssr (Next 16 renombró middleware→proxy);
+│                         protege todo excepto /login, /auth/*, manifest, sw.js, estáticos
 ├── components/
 │   ├── AlbumBook.tsx     ACTIVO: libro 48 selecciones, visual de referencia v3,
 │   │                     spread 2 páginas en desktop (≥900px), móvil una hoja
 │   └── AlbumPage.tsx     LEGACY (F0, Grupo A) — no borrar hasta gate humano
 ├── lib/
 │   ├── album-data.ts     GENERADO desde build_handoff k=album-data-v3 — NO editar a mano
-│   ├── inventory.ts      persistencia conmutable (LocalStore F0 / SupabaseStore F1)
+│   ├── inventory.ts      persistencia conmutable: CloudStore (album_progress, Fv4.0)
+│   │                     con LocalStore de fallback sin configuración
+│   ├── supabase/         client.ts (browser singleton) · server.ts (route handlers)
 │   └── teams.ts          LEGACY (datos F0 Grupo A)
-├── public/fonts/fwc26.otf · manifest.webmanifest · sw.js (Fv3.6: PWA instalable,
-│                         SW registrado solo en prod, iconos 192/512 en bucket flags/icons/)
-├── qa/                   suites Playwright versionadas fv31..fv38 (ver qa/README.md)
-└── supabase/schema.sql   F1 (tabla inventory + RLS) — AÚN SIN USAR
+├── public/fonts/fwc26.otf · manifest.webmanifest · sw.js (PWA; /login y /auth/*
+│                         SIEMPRE red directa, sin caché)
+├── qa/                   suites Playwright fv31..fv40 + _mock-auth.mjs (ver qa/README.md)
+├── supabase/migrations/  0001_album_progress.sql (DDL de referencia, YA aplicada
+│                         por el orquestador — NO re-aplicar) · schema.sql (histórico F1)
+└── .env.local            NEXT_PUBLIC_SUPABASE_URL/ANON_KEY (gitignored; en Vercel
+                          las pone San ANTES del deploy)
 docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
                           ERRORES (catálogo con guardarraíles) · PENDIENTES
 ```
@@ -83,7 +91,18 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
   (no ejecutar `playwright install`). El swipe por CDP desde el borde izquierdo dispara el
   gesto "back" del navegador: usar TouchEvent sintético (ver suites en `album26/qa/`).
 - `create-next-app@latest` instaló **Next 16.x** (el plan asumía 15): themeColor va en
-  `export const viewport`, y el build no ejecuta ESLint.
+  `export const viewport`, el build no ejecuta ESLint, y el convenio de middleware
+  es **`proxy.ts`** (función `proxy`; `middleware.ts` está deprecado y el build avisa).
+- **Auth (Fv4.0)**: proyecto Supabase COMPARTIDO con la Porra (43 usuarios) —
+  PROHIBIDO tocar settings globales de Auth, tablas/RLS/functions ajenas. Solo
+  `album_progress` y código del álbum. La confirmación de email está ACTIVA.
+- **QA con auth**: el server de las suites corre con `QA_AUTH_MOCK=1`
+  (`QA_AUTH_MOCK=1 npx next start -p …`): la cookie `qa-session` cuenta como sesión
+  en el proxy (el getUser del server corre en Node y no lo intercepta page.route).
+  En el navegador, `qa/_mock-auth.mjs` monta cookie sb-* + mocks STATEFUL de
+  auth/album_progress (con CORS+OPTIONS). JAMÁS definir QA_AUTH_MOCK en Vercel.
+- En las suites ESM, NO declarar `const URL = …` sin renombrar los usos del
+  constructor global (usar `globalThis.URL`) — ya mordió dos veces (TS/JS trap).
 
 ## Estado de fases (detalle en docs/DECISIONES.md)
 
@@ -101,4 +120,5 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
 | Fv3.7 cromos 18-20 a tamaño completo + GROUP en 1 columna | ✅ | ver `git log` |
 | Fv3.8 iOS/Safari: libro móvil con ventana ±2 + sombra ::before + SW guardas | ✅ | ver `git log` |
 | **v1.0.0 PRODUCCIÓN** — gate humano OK (desktop + Safari/iOS) | ✅ | `e3c1705` |
-| F1 Supabase auth+sync · req #2 imágenes | ⏸ pendientes | — |
+| Fv4.0 auth registro abierto + progreso en nube (RLS) | ✅ (gate prod: env vars Vercel) | ver `git log` |
+| Fv4.1 empaquetado nativo · req #2 imágenes | ⏸ pendientes | — |

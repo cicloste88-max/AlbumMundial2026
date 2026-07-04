@@ -14,9 +14,12 @@
     "qa:geo": "node qa/verify-fv35-geo.mjs",
     "qa:pwa": "node qa/verify-fv36-pwa.mjs",
     "qa:grid": "node qa/verify-fv37-grid.mjs",
-    "qa:ios": "node qa/verify-fv38-ios.mjs"
+    "qa:ios": "node qa/verify-fv38-ios.mjs",
+    "qa:auth": "node qa/verify-fv40-auth.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.110.0",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"

@@ -2,7 +2,7 @@
 //  - cache-first para /_next/static (inmutable: los nombres llevan hash de build)
 //  - network-first para el documento (con fallback a caché para abrir offline)
 //  - NADA más: las banderas y cualquier request cross-origin no se tocan ni precachean
-const CACHE = 'album26-v3';
+const CACHE = 'album26-v4';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -22,6 +22,9 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // banderas/CDN: fuera
   if (req.mode === 'navigate') {
+    // Fv4.0: /login y /auth/* SIEMPRE a red directa — ni se cachean ni se
+    // sirven de caché (el estado de sesión no puede quedarse congelado)
+    if (url.pathname === '/login' || url.pathname.startsWith('/auth/')) return;
     e.respondWith(
       fetch(req).then((res) => {
         // Safari rechaza servir a una navegación una respuesta redirigida

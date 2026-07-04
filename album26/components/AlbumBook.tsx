@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ORDER, PALETAS, ALBUM_TEAMS, VERIF } from '@/lib/album-data';
 import { getStore, type InvMap, type Entry } from '@/lib/inventory';
+import { getSupabase, supabaseConfigured } from '@/lib/supabase/client';
 
 const store = getStore();
 const MAX_REPES = 5;
@@ -531,9 +532,16 @@ function statusHTML(page: number, invs: Record<string, InvMap>): string {
     const pct = Math.round((got / 20) * 100);
     return '<div class="demo-bar"><b>' + T.pais + '</b> · GRUPO ' + T.grupo
       + ' · Pegados ' + got + '/20 · ' + pct + '% · <b>REPES ' + repeTotal + '</b>'
-      + '<button class="rst" data-reset data-code="' + code + '" title="Reiniciar este equipo">↺ Reiniciar</button></div>';
+      + '<button class="rst" data-reset data-code="' + code + '" title="Reiniciar este equipo">↺ Reiniciar</button>'
+      + logoutHTML() + '</div>';
   }
-  return '<div class="demo-bar">Álbum Mundial 2026 · <b>48 selecciones</b> · toca un cromo: falta → tengo → repe ×' + MAX_REPES + '</div>';
+  return '<div class="demo-bar">Álbum Mundial 2026 · <b>48 selecciones</b> · toca un cromo: falta → tengo → repe ×' + MAX_REPES
+    + logoutHTML() + '</div>';
+}
+
+// Fv4.0: botón discreto de cierre de sesión (solo con Supabase configurado)
+function logoutHTML(): string {
+  return supabaseConfigured ? '<button class="rst" data-logout title="Cerrar sesión">⎋ Salir</button>' : '';
 }
 
 function bookHTML(page: number, invs: Record<string, InvMap>): string {
@@ -619,11 +627,20 @@ function fitHeaders(root: HTMLElement) {
 /* ---------- componente (motor Fv3, sin cambios funcionales) ---------- */
 export default function AlbumBook() {
   const ref = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef<Set<string>>(new Set());
   const swipedRef = useRef(false);
   const [page, setPage] = useState(0);
   const [invs, setInvs] = useState<Record<string, InvMap>>({});
+  const invsRef = useRef(invs);
+  invsRef.current = invs;
   const [isDesktop, setIsDesktop] = useState(false);
+  const [ready, setReady] = useState(false);   // Fv4.0: hidratación del progreso
+  const [toast, setToast] = useState('');       // Fv4.0: aviso de guardado fallido
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const avisar = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(''), 4000);
+  }, []);
 
   // breakpoint spread: re-render limpio al cruzar 900px
   useEffect(() => {
@@ -646,32 +663,42 @@ export default function AlbumBook() {
     };
   }, []);
 
-  // cargar inventario de los equipos montados (hoja actual ±2)
+  // Fv4.0: hidratación completa del progreso ANTES del primer render del libro
+  // (una sola SELECT de album_progress con sesión; LocalStore como fallback)
   useEffect(() => {
-    const codes = new Set<string>();
-    for (let q = page - 2; q <= page + 2; q++) {
-      const i = Math.floor((q - 2) / 2);
-      if (q >= 2 && i >= 0 && i < ORDER.length) codes.add(ORDER[i]);
-    }
-    for (const c of codes) {
-      if (loadingRef.current.has(c)) continue;
-      loadingRef.current.add(c);
-      store.loadCountry(c).then((m) => setInvs((prev) => ({ ...prev, [c]: m })));
-    }
-  }, [page]);
+    let alive = true;
+    store.loadAll()
+      .then((all) => { if (alive) { setInvs(all); setReady(true); } })
+      .catch(() => {
+        if (!alive) return;
+        setReady(true);
+        avisar('No se pudo cargar tu progreso. Revisa la conexión y recarga.');
+      });
+    return () => { alive = false; };
+  }, [avisar]);
 
+  // Fv4.0: optimistic UI — el estado cambia ya; si el upsert falla, se revierte
   const apply = useCallback((key: string, entry: Entry | null) => {
     const code = key.split('-')[0];
-    setInvs((prev) => {
-      const m = { ...(prev[code] || {}) };
+    const prev: Entry | undefined = (invsRef.current[code] || {})[key];
+    setInvs((p) => {
+      const m = { ...(p[code] || {}) };
       if (entry) m[key] = entry; else delete m[key];
-      return { ...prev, [code]: m };
+      return { ...p, [code]: m };
     });
-    store.put(key, entry);
-  }, []);
+    store.put(key, entry).catch(() => {
+      setInvs((p) => {
+        const m = { ...(p[code] || {}) };
+        if (prev) m[key] = prev; else delete m[key];
+        return { ...p, [code]: m };
+      });
+      avisar('Sin conexión: el último cambio no se ha guardado.');
+    });
+  }, [avisar]);
 
   // render por innerHTML (patrón Fv3); desktop = spread por vistas, móvil = libro
   useEffect(() => {
+    if (!ready) return; // Fv4.0: no renderizar el libro hasta hidratar el progreso
     const el = ref.current; if (!el) return;
     el.innerHTML = SYMBOLS + '<style>' + CSS + '</style>'
       + navHTML(page, isDesktop)
@@ -683,7 +710,7 @@ export default function AlbumBook() {
     if (chips && onChip) chips.scrollLeft = onChip.offsetLeft - chips.clientWidth / 2 + onChip.clientWidth / 2;
     // Fv3.4: ajustar wordmark del header L al ancho disponible
     fitHeaders(el);
-  }, [page, invs, isDesktop]);
+  }, [page, invs, isDesktop, ready]);
 
   // delegación de eventos + swipe (móvil: hojas · desktop: vistas + teclado + drag)
   useEffect(() => {
@@ -712,12 +739,20 @@ export default function AlbumBook() {
       if (navBtn) { step(navBtn.dataset.nav === 'next' ? 1 : -1); return; }
       const goto = target.closest('[data-goto]') as HTMLElement | null;
       if (goto) { nav(parseInt(goto.dataset.goto!, 10)); return; }
+      const logout = target.closest('[data-logout]') as HTMLElement | null;
+      if (logout) {
+        getSupabase().auth.signOut().finally(() => window.location.assign('/login'));
+        return;
+      }
       const reset = target.closest('[data-reset]') as HTMLElement | null;
       if (reset) {
         const code = reset.dataset.code!;
         if (confirm('¿Reiniciar el inventario de ' + ALBUM_TEAMS[code].pais + '?')) {
-          store.clear(code);
+          const prevMap = invs[code] || {};
           setInvs((prev) => ({ ...prev, [code]: {} }));
+          store.clear(code).catch(() => {
+            setInvs((prev) => ({ ...prev, [code]: prevMap }));
+          });
         }
         return;
       }
@@ -787,5 +822,36 @@ export default function AlbumBook() {
     };
   }, [page, invs, apply, isDesktop]);
 
-  return <div ref={ref} className="ab-wrap" id="app" />;
+  return (
+    <>
+      <div ref={ref} className="ab-wrap" id="app" style={ready ? undefined : { display: 'none' }} />
+      {!ready && (
+        <div
+          id="ab-load"
+          style={{
+            minHeight: '100vh', background: '#1E1B33', color: '#CFC5EE', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+            fontFamily: 'var(--font-barlow), system-ui, sans-serif', letterSpacing: '.04em',
+          }}
+        >
+          Cargando tu álbum…
+        </div>
+      )}
+      {toast && (
+        <div
+          id="ab-toast"
+          role="alert"
+          style={{
+            position: 'fixed', left: '50%', bottom: 18, transform: 'translateX(-50%)',
+            zIndex: 999, background: '#C8481F', color: '#fff', padding: '10px 16px',
+            borderRadius: 10, fontWeight: 700, fontSize: 13.5, maxWidth: '92vw',
+            fontFamily: 'var(--font-barlow), system-ui, sans-serif',
+            boxShadow: '0 6px 18px rgba(0,0,0,.45)',
+          }}
+        >
+          {toast}
+        </div>
+      )}
+    </>
+  );
 }

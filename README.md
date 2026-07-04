@@ -16,8 +16,10 @@ Tracker de la colección de cromos del **álbum oficial Panini del Mundial FIFA 
   de 2 páginas con lomo, navegación por chips, flechas, teclado y drag.
 - **Inventario por cromo**: tap para ciclar `falta → tengo → repe1..repe5 → falta`,
   stepper ± para repes, contador de pegados/repes y reset por selección.
-  Persistencia en `localStorage` (clave `album26_<CODE>`), preparada para migrar a
-  Supabase con login (F1, pendiente).
+- **Cuentas y nube (Fv4.0)**: registro abierto (email+password con confirmación por
+  correo) en `/login`; el progreso se guarda por usuario en Supabase
+  (`album_progress`, RLS owner-only) con UI optimista, y te sigue en cualquier
+  dispositivo. Sin sesión, todo redirige a `/login` (proxy de @supabase/ssr).
 - **PWA**: manifest instalable (standalone, iconos 192/512 servidos desde bucket) y
   service worker mínimo (cache-first para estáticos, network-first para el documento).
 - **Datos verificados**: nombres del álbum oficial contrastados por OCR, federaciones,
@@ -66,7 +68,11 @@ npm run qa:geo     # geometría móvil: solapes/desbordes/banderas ?v=2 (24)
 npm run qa:pwa     # manifest/SW/iconos + img sin src (14)
 npm run qa:grid    # invariante "la parrilla manda" (24)
 npm run qa:ios     # presupuesto de composición iOS del libro móvil (11)
+npm run qa:auth    # auth + progreso en nube con mocks (19)
 ```
+
+Desde Fv4.0 el server de QA corre con `QA_AUTH_MOCK=1` (el sandbox no llega a
+supabase.co); ver `album26/qa/README.md`.
 
 Los dos **invariantes duros** del proyecto (violarlos rompe el gate):
 
@@ -83,6 +89,11 @@ Los dos **invariantes duros** del proyecto (violarlos rompe el gate):
 - **Handoffs de datos**: los paquetes de datos llegan por la tabla
   `public.build_handoff` (jsonb con md5 verificado antes de usar). El estado de cada
   fase se publica en la misma tabla (`k='fvXX-status'`).
+- **Auth y progreso (Fv4.0)**: Supabase Auth (proyecto compartido; los settings
+  globales no se tocan desde este repo) + tabla `album_progress` con RLS
+  owner-only (DDL de referencia en `album26/supabase/migrations/`). La app
+  necesita `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  (en local: `album26/.env.local`; en Vercel las gestiona San).
 - **Deploy**: gestionado por San en Vercel; este repositorio no contiene
   configuración de deploy. Push directo a `main` (sin PRs); la rama
   `claude/album26-f0-phase-qtj1n6` se mantiene sincronizada con `main`.

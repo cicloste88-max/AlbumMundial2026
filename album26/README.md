@@ -21,10 +21,13 @@ npm run qa:geo     # fv35 · geometría móvil 360×740 (24)
 npm run qa:pwa     # fv36 · manifest/SW/iconos + img sin src (14)
 npm run qa:grid    # fv37 · invariante "la parrilla manda" (24)
 npm run qa:ios     # fv38 · presupuesto de composición iOS del libro móvil (11)
+npm run qa:auth    # fv40 · auth + progreso en nube con mocks (19)
 ```
 
-Las suites necesitan la app corriendo (`QA_URL`, default `http://localhost:3000/`) y
-un Chromium local (`QA_CHROME`); detalles en `qa/README.md`.
+Las suites necesitan la app corriendo con `QA_AUTH_MOCK=1` (`QA_URL`, default
+`http://localhost:3000/`) y un Chromium local (`QA_CHROME`); detalles en
+`qa/README.md`. Para build/dev hace falta `.env.local` con
+`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 ## Estructura
 
@@ -33,7 +36,10 @@ app/
 ├── layout.tsx        fuentes next/font (Inter, Saira, Baloo 2, Barlow SC), metadata
 │                     PWA (manifest, apple-touch-icon) y registro del SW (solo prod)
 ├── globals.css       reset F0 + @font-face FWC26
-└── page.tsx          → <AlbumBook/>
+├── page.tsx          → <AlbumBook/>
+├── login/page.tsx    Fv4.0: Entrar/Registrarse (email+password, registro abierto)
+└── auth/             confirm (token_hash) y callback (code) del email de Supabase
+proxy.ts              Fv4.0: sesión @supabase/ssr (convenio Next 16); sin sesión → /login
 components/
 ├── AlbumBook.tsx     TODO el motor: datos→HTML (builders string), CSS del libro
 │                     (template literal), navegación, estados, swipe, fitHeaders
@@ -41,8 +47,9 @@ components/
 lib/
 ├── album-data.ts     GENERADO desde build_handoff (ORDER/PALETAS/ALBUM_TEAMS/VERIF)
 │                     — NO editar a mano; se regenera por script en cada fase de datos
-├── inventory.ts      InventoryStore (loadCountry/put/clear) · LocalStore activo ·
-│                     SupabaseStore comentado (F1)
+├── inventory.ts      InventoryStore (loadAll/loadCountry/put/clear) · CloudStore
+│                     (album_progress, Fv4.0) · LocalStore de fallback
+├── supabase/         client.ts (browser singleton) · server.ts (route handlers)
 └── teams.ts          LEGACY F0
 public/
 ├── fonts/fwc26.otf   wordmark FWC26

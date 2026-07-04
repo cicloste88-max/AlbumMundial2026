@@ -3,6 +3,7 @@
 // Env:  QA_URL (default http://localhost:3000) · QA_CHROME (binario Chromium)
 //       QA_OUT (carpeta de screenshots, default ./qa-shots)
 import { chromium } from 'playwright-core';
+import { mockAuth } from './_mock-auth.mjs';   // Fv4.0: sesión+progreso mockeados
 const EXE = process.env.QA_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const URL = process.env.QA_URL || 'http://localhost:3000/';
 const OUT = process.env.QA_OUT || './qa-shots';
@@ -12,11 +13,12 @@ const results = [];
 const ok = (n, c, x='') => { results.push([c?'PASS':'FAIL', n, x]); console.log((c?'PASS':'FAIL')+'  '+n+(x?'  ['+x+']':'')); if(!c) process.exitCode=1; };
 
 const b = await chromium.launch({ executablePath: EXE });
-const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, hasTouch: true });
+const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, hasTouch: true, serviceWorkers: 'block' });
+const mock = await mockAuth(ctx, URL);   // requiere server con QA_AUTH_MOCK=1
 const p = await ctx.newPage();
 p.on('dialog', d => d.accept());
 await p.goto(URL, { waitUntil: 'networkidle' });
-await p.evaluate(() => localStorage.clear());
+mock.state.clear();
 await p.reload({ waitUntil: 'networkidle' });
 await p.waitForTimeout(250);
 
@@ -97,10 +99,12 @@ ok('móvil tras resize: libro de hojas (.sheet) presente (ventana ±2)', await p
 await clickChip('CUW'); await p.waitForTimeout(120);
 ds = await p.evaluate(() => document.querySelector('[data-tile="CUW-2"]').dataset.state);
 ok('móvil: CUW-2 sigue tengo (misma clave storage)', ds === 'tengo', ds);
-const ls = await p.evaluate(() => localStorage.getItem('album26_CUW'));
-ok('localStorage album26_CUW compartido', ls !== null && ls.includes('"CUW-2"'), ls);
+// Fv4.0: la persistencia cross-modo vive en la nube (album_progress vía mock stateful)
+ok('nube compartida cross-modo (upsert CUW-2 en album_progress)',
+  mock.calls.upserts.some(u => u.slot === 'CUW-2' && u.pegado === true) && mock.state.has('CUW-2'),
+  JSON.stringify([...mock.state.keys()]));
 await p.screenshot({ path: `${OUT}/fv32_cuw_L_movil.png`, fullPage: false });
-await p.evaluate(() => localStorage.clear());
+mock.state.clear();
 await b.close();
 
 const f = results.filter(r=>r[0]==='FAIL').length;

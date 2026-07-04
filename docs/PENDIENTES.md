@@ -31,11 +31,27 @@ emite (una `<img>` sin src audita como rota — 9 en portada por las hojas vecin
 montadas): cuando el requisito traiga URLs reales, `tileHTML` debe emitir la `<img>`
 solo con src válido (el CSS `.imgslot` sigue en su sitio).
 
-## F1 — Supabase (multidispositivo, login Google): pendiente
-- `supabase/schema.sql` listo (tabla `inventory` + RLS + trigger updated_at). SIN aplicar.
-- `SupabaseStore` (con `clear()`) comentado en `lib/inventory.ts`; conmutación en
-  `getStore()`. Requiere gates humanos: proyecto Supabase, `.env.local`, OAuth Google.
-- Migración prevista: primer login sube claves `album26_*` de localStorage (idempotente).
+## F1/Fv4.0 — Auth + progreso en nube: ✅ HECHO (Fv4.0), pendiente gate de prod
+- Registro abierto email+password + progreso por usuario en `album_progress`
+  (RLS owner-only). El plan F1 original (login Google) quedó sustituido por la
+  decisión de San en Fv4.0; `supabase/schema.sql` (tabla `inventory`) es HISTÓRICO
+  y no se aplicará — la migración real versionada está en
+  `supabase/migrations/0001_album_progress.sql` (ya aplicada por el orquestador).
+- **GATE DE PROD pendiente**: añadir en Vercel `NEXT_PUBLIC_SUPABASE_URL` y
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` ANTES de que prod funcione (sin ellas todo
+  redirige a /login). JAMÁS definir `QA_AUTH_MOCK` en Vercel. E2E real (signup +
+  confirmación de email + RLS + multidispositivo) a validar por el orquestador.
+- Migración localStorage→nube NO incluida (el brief Fv4.0 no la pedía): los
+  usuarios empiezan de cero en la nube. Si San la quiere, es una fase pequeña
+  (subir claves `album26_*` en el primer login, idempotente).
+- Enlace del email de confirmación: sin tocar la allowlist global (compartida con
+  la Porra) el usuario puede aterrizar en el Site URL de la Porra tras confirmar —
+  la cuenta queda confirmada igualmente y entra por /login. Si San quiere que
+  aterrice en el álbum: añadir la URL del álbum a Auth → URL Configuration
+  (decisión suya, es setting global).
+
+## Fv4.1 — Empaquetado nativo: NO EMPEZAR sin paquete
+- Decisión de San: primero web (Fv4.0), después el empaquetado tipo app nativa.
 
 ## F4 — PWA: ✅ instalable desde Fv3.6
 - Manifest completo (name/short_name/display standalone/colores `#1E1B33`), iconos

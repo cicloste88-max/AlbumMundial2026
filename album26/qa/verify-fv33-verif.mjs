@@ -2,13 +2,15 @@
 // Viewport 1280x800 (spread: ve L+R juntas). GT del brief + placeholders sin inventar.
 // Uso:  QA_URL=http://localhost:3000 node qa/verify-fv33-verif.mjs
 import { chromium } from 'playwright-core';
+import { mockAuth } from './_mock-auth.mjs';   // Fv4.0: sesión+progreso mockeados
 const EXE = process.env.QA_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const URL = process.env.QA_URL || 'http://localhost:3000/';
 const results = [];
 const ok = (n, c, x='') => { results.push([c?'PASS':'FAIL', n, x]); console.log((c?'PASS':'FAIL')+'  '+n+(x?'  ['+x+']':'')); if(!c) process.exitCode=1; };
 
 const b = await chromium.launch({ executablePath: EXE });
-const ctx = await b.newContext({ viewport: { width: 1280, height: 800 } });
+const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, serviceWorkers: 'block' });
+await mockAuth(ctx, URL);   // requiere server con QA_AUTH_MOCK=1
 const p = await ctx.newPage();
 p.on('dialog', d => d.accept());
 await p.goto(URL, { waitUntil: 'networkidle' });

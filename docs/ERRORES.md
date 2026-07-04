@@ -143,6 +143,39 @@ Formato: **Síntoma → Causa raíz → Fix → Guardarraíl**.
 - **Fix**: render condicional — la `<img>` solo se emitirá cuando haya URL real.
 - **Guardarraíl**: check "cero img con src vacío" en `qa:pwa`.
 
+## Auth / Fv4.0
+
+### Next 16: `middleware.ts` deprecado
+- **Síntoma**: el build avisa "The middleware file convention is deprecated.
+  Please use proxy instead".
+- **Fix**: `proxy.ts` en la raíz de la app con `export async function proxy(...)`
+  (misma forma que middleware; el patrón @supabase/ssr no cambia).
+
+### El getUser del proxy no se puede mockear con page.route
+- **Síntoma**: con sesión mockeada en el navegador, `/` seguía redirigiendo a
+  /login en QA.
+- **Causa**: `supabase.auth.getUser()` del proxy corre en el proceso Node del
+  server — `page.route` solo intercepta la red del NAVEGADOR.
+- **Fix**: escape hatch `QA_AUTH_MOCK=1` (server de QA): la cookie `qa-session`
+  cuenta como sesión. Nunca definirla en Vercel.
+- **Guardarraíl**: comentado en `proxy.ts` y documentado en qa/README.
+
+### Mocks cross-origin: CORS y preflight en route.fulfill
+- **Síntoma potencial**: los fetch del cliente supabase-js (Authorization/apikey)
+  disparan preflight OPTIONS incluso en GET; sin cabeceras CORS en el fulfill el
+  navegador descarta la respuesta mockeada.
+- **Fix**: `qa/_mock-auth.mjs` responde OPTIONS y añade access-control-* a todo.
+
+### La ventana optimista es muy corta para testearla con mocks instantáneos
+- **Síntoma**: el check "el tile marca al instante" leía ya el estado revertido.
+- **Causa**: el mock respondía el 503 en el mismo tick; React re-renderiza el
+  innerHTML en un efecto y el revert llegaba antes del sample.
+- **Fix**: el mock de fallo responde con 600ms de latencia (opts.failWrites).
+
+### `const URL = …` sombrea al constructor global (×2)
+- **Síntoma**: `TypeError: URL is not a constructor` en suites ESM.
+- **Fix**: `new globalThis.URL(...)` (o no llamar URL a la variable).
+
 ## QA / entorno
 
 - **El sandbox no llega a supabase.co** (política de red): los payloads van por MCP

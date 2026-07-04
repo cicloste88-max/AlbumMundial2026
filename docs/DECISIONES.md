@@ -244,6 +244,50 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   cromos), datos en revisión (fed 6, mlang IRN, quali 47), typos de checklist a
   validar contra el álbum físico, y retirada del legacy F0 tras gate.
 
+## Fv4.0 — Auth con registro abierto + progreso por usuario en nube
+
+- **Contexto crítico**: proyecto Supabase COMPARTIDO con la Porra Mundial 2026 (43
+  usuarios reales). No se tocó NINGÚN setting global de Auth ni tablas/RLS/functions
+  ajenas; solo código del álbum. La tabla `public.album_progress` (user_id+slot PK,
+  pegado bool, repes 0..5, RLS owner-only ×4) la creó el orquestador; su DDL queda
+  versionado en `supabase/migrations/0001_album_progress.sql` SIN re-aplicar.
+- **Sesión**: `@supabase/ssr` con cookies. `lib/supabase/client.ts` (browser
+  singleton) + `lib/supabase/server.ts` (route handlers) + **`proxy.ts`** — Next 16
+  deprecó el convenio `middleware.ts` (build avisa y pide renombrar; misma forma,
+  función `proxy`). Protege todo excepto /login, /auth/*, manifest, sw.js y
+  estáticos; sin sesión → /login; con sesión, /login → /.
+- **/login**: tabs Entrar/Registrarse (email+password), estética de la portada
+  (#1E1B33 + bloques), errores en castellano (credenciales, ya registrado —
+  incluida la respuesta ofuscada `identities:[]` de Supabase —, password corta,
+  email sin confirmar, rate limit). Registro → pantalla "Revisa tu correo"
+  (la confirmación de email está ACTIVA a nivel de proyecto). `/auth/confirm`
+  (token_hash) y `/auth/callback` (code) cubren ambos formatos de enlace SIN tocar
+  la allowlist global: si el enlace cae en el Site URL de la Porra, la cuenta se
+  confirma igual y el usuario vuelve a /login.
+- **Progreso**: `CloudStore` contra album_progress (mapeo 'falta'=pegado:false,
+  'tengo'=true/0, 'repe'=true/1..5). Hidratación completa (una SELECT) al montar
+  con splash "Cargando tu álbum…"; upsert inmediato por tap con optimistic UI +
+  revert + toast si falla; reset por equipo con DELETE like 'CODE-%' y revert.
+  `LocalStore` queda como fallback sin configuración. Sin migración
+  localStorage→nube (el brief no la pedía; decisión documentada en PENDIENTES).
+- **PWA**: /login y /auth/* excluidos de TODA caché del SW (red directa); caché
+  `album26-v4`. manifest/sw.js/fuentes accesibles sin sesión (verificado).
+- **QA sin red a supabase.co**: server con `QA_AUTH_MOCK=1` (cookie `qa-session`
+  cuenta como sesión en el proxy — el getUser del server no puede mockearse con
+  page.route porque corre en Node) + `qa/_mock-auth.mjs` en el navegador: cookie
+  sb-* del cliente y mocks STATEFUL de auth/album_progress (CORS+OPTIONS en los
+  fulfill; los upserts mutan un Map → la persistencia tras recarga se testea de
+  verdad). Suite `qa/verify-fv40-auth.mjs` (19 checks: redirect, login+validación,
+  hidratación, contador, upsert spy con user_id, persistencia, logout, optimistic
+  revert con latencia forzada, assets públicos). Las 8 suites previas adaptadas
+  (sesión mock; los checks de localStorage pasan a asserts de nube). Regresión:
+  19 + 57 + 24 + 18 + 15 + 24 + 14 + 24 + 11 = 206/206.
+- **Gate de prod (orquestador/San)**: añadir en Vercel las env vars
+  `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` ANTES del deploy
+  (sin ellas, todo redirige a /login y el login avisa de configuración pendiente);
+  JAMÁS definir `QA_AUTH_MOCK` en Vercel. El e2e real (signup, confirmación, RLS,
+  multidispositivo) se valida en prod.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

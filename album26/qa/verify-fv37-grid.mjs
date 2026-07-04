@@ -8,6 +8,7 @@
 // NOTA sandbox: flags/ interceptadas con PNG fixture w640 (sin red a supabase.co).
 // Uso:  QA_URL=http://localhost:3000 node qa/verify-fv37-grid.mjs
 import { chromium } from 'playwright-core';
+import { mockAuth } from './_mock-auth.mjs';   // Fv4.0: sesión+progreso mockeados
 import { mkdirSync } from 'fs';
 const EXE = process.env.QA_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const URL = process.env.QA_URL || 'http://localhost:3000/';
@@ -27,6 +28,7 @@ const tileWidths = (root) => [...root.querySelectorAll('.tile[data-tile]')]
 for (const vw of [[1280, 800, 'desktop'], [360, 740, 'móvil']]) {
   const [w, h, modo] = vw;
   const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, hasTouch: w < 900, serviceWorkers: 'block' });
+  await mockAuth(ctx, URL);   // Fv4.0: requiere server con QA_AUTH_MOCK=1
   const fx = await ctx.newPage();
   const du = await fx.evaluate(() => {
     const c = document.createElement('canvas'); c.width = 640; c.height = 427;

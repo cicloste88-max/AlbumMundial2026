@@ -9,6 +9,7 @@
 // (sin red a supabase.co); los 200 reales del bucket se validan en prod.
 // Uso:  QA_URL=http://localhost:3000 node qa/verify-fv36-pwa.mjs
 import { chromium } from 'playwright-core';
+import { mockAuth } from './_mock-auth.mjs';   // Fv4.0: sesión+progreso mockeados
 import { mkdirSync } from 'fs';
 const EXE = process.env.QA_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const URL = process.env.QA_URL || 'http://localhost:3000/';
@@ -22,6 +23,7 @@ const b = await chromium.launch({ executablePath: EXE });
 const makeCtx = async (vw, vh) => {
   // serviceWorkers:'block' para que el SW (prod) no interfiera con page.route
   const ctx = await b.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: 2, hasTouch: vw < 900, serviceWorkers: 'block' });
+  await mockAuth(ctx, URL);   // Fv4.0: requiere server con QA_AUTH_MOCK=1
   const fx = await ctx.newPage();
   const dataUrl = await fx.evaluate(() => {
     const c = document.createElement('canvas'); c.width = 640; c.height = 427;

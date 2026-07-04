@@ -15,17 +15,22 @@ que sean reproducibles (antes vivían en el scratchpad efímero de la sesión de
 
 ```bash
 # desde album26/
-npm run build && PORT=3000 npm run start &   # o el puerto que uses
+# Fv4.0: el server de QA corre con QA_AUTH_MOCK=1 (la cookie qa-session cuenta
+# como sesión en el proxy; el sandbox no llega a supabase.co). En el navegador,
+# qa/_mock-auth.mjs monta la sesión del cliente y mocks STATEFUL de
+# auth/album_progress. JAMÁS definir QA_AUTH_MOCK en Vercel.
+npm run build && QA_AUTH_MOCK=1 PORT=3000 npm run start &   # o el puerto que uses
 
 # atajos npm (equivalen a QA_URL=http://localhost:3000 node qa/verify-…)
 npm run qa:movil    # fv31 (57)     npm run qa:geo   # fv35 (24)
 npm run qa:spread   # fv32 (24)     npm run qa:pwa   # fv36 (14)
 npm run qa:verif    # fv33 (18)     npm run qa:grid  # fv37 (24)
 npm run qa:visual   # fv34 (15)     npm run qa:ios   # fv38 (11)
+npm run qa:auth     # fv40 (19)
 ```
 
-Las 8 suites en verde son la regresión completa exigida antes de cada push a `main`
-(estado v1.0: 57+24+18+15+24+14+24+11 = 187 checks).
+Las 9 suites en verde son la regresión completa exigida antes de cada push a `main`
+(estado Fv4.0: 57+24+18+15+24+14+24+11+19 = 206 checks).
 
 Variables: `QA_URL` (default `http://localhost:3000/`), `QA_CHROME` (binario Chromium),
 `QA_OUT` (carpeta de screenshots, default `./qa-shots`).
@@ -70,6 +75,14 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
   backing (CDP LayerTree) tras varios pasos, sombra en `::before` sin `filter` en
   `.book`, navegación por ventana y guardas Safari del service worker. Regresión
   permanente (la violación crashea WebContent en iOS: "problema repetidamente").
+- **verify-fv40-auth.mjs** (390×844): auth Fv4.0 — sin sesión / redirige a /login,
+  /login renderiza y valida en castellano, con sesión mock el libro se hidrata de
+  la nube (contador real), upsert inmediato con user_id (spy), persistencia tras
+  recarga contra el mock stateful, logout, revert optimista con fallo forzado y
+  manifest/sw/estáticos accesibles sin sesión. El e2e real (signup, confirmación,
+  RLS, multidispositivo) se valida en prod.
+- **_mock-auth.mjs**: helper compartido — cookies de sesión (qa-session + sb-*) y
+  mocks stateful de `auth/v1` y `rest/v1/album_progress` con CORS/OPTIONS.
 
 ## Notas
 

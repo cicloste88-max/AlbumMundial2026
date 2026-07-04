@@ -11,6 +11,7 @@
 // contra el CDN real (PNGs w640 ya subidos al bucket) se hace en prod.
 // Uso:  QA_URL=http://localhost:3000 node qa/verify-fv35-geo.mjs
 import { chromium } from 'playwright-core';
+import { mockAuth } from './_mock-auth.mjs';   // Fv4.0: sesión+progreso mockeados
 const EXE = process.env.QA_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const URL = process.env.QA_URL || 'http://localhost:3000/';
 const CODES = ['HAI', 'CZE', 'PAN'];
@@ -21,6 +22,7 @@ const ok = (n, c, x='') => { results.push([c?'PASS':'FAIL', n, x]); console.log(
 const b = await chromium.launch({ executablePath: EXE });
 // serviceWorkers:'block': desde Fv3.6 hay SW en prod y podría saltarse page.route
 const ctx = await b.newContext({ viewport: { width: 360, height: 740 }, deviceScaleFactor: 2, hasTouch: true, serviceWorkers: 'block' });
+await mockAuth(ctx, URL);   // Fv4.0: requiere server con QA_AUTH_MOCK=1
 
 // fixture PNG 640x427 (rectangular, como los w640 del bucket) generado con canvas
 const fixPage = await ctx.newPage();

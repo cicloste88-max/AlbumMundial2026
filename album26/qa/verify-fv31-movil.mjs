@@ -3,6 +3,7 @@
 // Env:  QA_URL (default http://localhost:3000) · QA_CHROME (binario Chromium)
 //       QA_OUT (carpeta de screenshots, default ./qa-shots)
 import { chromium } from 'playwright-core';
+import { mockAuth } from './_mock-auth.mjs';   // Fv4.0: sesión+progreso mockeados
 const EXE = process.env.QA_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const URL = process.env.QA_URL || 'http://localhost:3000/';
 const OUT = process.env.QA_OUT || './qa-shots';
@@ -12,11 +13,12 @@ const results = [];
 const ok = (n, c, x='') => { results.push([c?'PASS':'FAIL', n, x]); console.log((c?'PASS':'FAIL')+'  '+n+(x?'  ['+x+']':'')); if(!c) process.exitCode=1; };
 
 const b = await chromium.launch({ executablePath: EXE });
-const ctx = await b.newContext({ viewport: { width: 420, height: 900 }, deviceScaleFactor: 2, hasTouch: true });
+const ctx = await b.newContext({ viewport: { width: 420, height: 900 }, deviceScaleFactor: 2, hasTouch: true, serviceWorkers: 'block' });
+const mock = await mockAuth(ctx, URL);   // requiere server con QA_AUTH_MOCK=1
 const p = await ctx.newPage();
 p.on('dialog', d => d.accept());
 await p.goto(URL, { waitUntil: 'networkidle' });
-await p.evaluate(() => localStorage.clear());
+mock.state.clear();
 await p.reload({ waitUntil: 'networkidle' });
 
 const visText = () => p.evaluate(() => document.querySelector('[data-current] .face.front')?.innerText || '');
@@ -119,8 +121,8 @@ await doSwipe(80, 300); await p.waitForTimeout(400);
 ok('swipe derecha -> hoja anterior', (await curPage()) === pgBefore, `en ${await curPage()}`);
 await p.waitForTimeout(400); // que expire el flag anti-click del swipe
 
-// estados + persistencia (estado limpio)
-await p.evaluate(() => localStorage.clear());
+// estados + persistencia (estado limpio en la nube mock)
+mock.state.clear();
 await p.reload({ waitUntil: 'networkidle' });
 await p.waitForTimeout(150);
 await clickChip('MEX');
@@ -164,12 +166,12 @@ bar = await barText();
 ok('persiste tras recarga (Pegados 2/20)', bar.includes('Pegados 2/20'), bar);
 s = await tState('MEX-1');
 ok('persiste MEX-1 data-state=tengo tras recarga', s.ds === 'tengo', JSON.stringify(s));
-const ls = await p.evaluate(() => localStorage.getItem('album26_MEX'));
-ok('formato localStorage compatible (album26_MEX)', ls !== null && ls.includes('"MEX-1"'), ls);
+// Fv4.0: el progreso vive en la nube (album_progress) con slot canónico
+ok('upsert en nube con slot canónico (MEX-1 pegado)', mock.calls.upserts.some(u => u.slot === 'MEX-1' && u.pegado === true), JSON.stringify(mock.calls.upserts.slice(-3)));
 await p.click('[data-reset][data-code="MEX"]'); await p.waitForTimeout(100);
 bar = await barText();
-const lsAfter = await p.evaluate(() => localStorage.getItem('album26_MEX'));
-ok('reset ↺: Pegados 0/20 y localStorage limpio', bar.includes('Pegados 0/20') && lsAfter === null, `ls=${lsAfter}`);
+const nubeMex = [...mock.state.keys()].filter(k => k.startsWith('MEX-'));
+ok('reset ↺: Pegados 0/20 y nube sin filas MEX (DELETE like)', bar.includes('Pegados 0/20') && nubeMex.length === 0, `nube=${nubeMex.length}`);
 await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(150);
 await clickChip('MEX'); await p.waitForTimeout(120);
 ok('reset persiste tras recarga', (await barText()).includes('Pegados 0/20'));
