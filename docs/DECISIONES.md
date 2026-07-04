@@ -233,8 +233,10 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
 ## v1.0.0 — declarada EN PRODUCCIÓN (2026-07-04)
 
 - Gate humano de San tras Fv3.8: la app funciona en desktop y en Safari/iOS
-  ("Ya funciona"). Versión del paquete `album26` elevada a **1.0.0** y tag `v1.0.0`
-  sobre el SHA de Fv3.8 + docs (`git log`).
+  ("Ya funciona"). Versión del paquete `album26` elevada a **1.0.0**. El tag
+  `v1.0.0` existe en local pero el proxy git del sandbox no permite push de tags
+  (403): si se quiere el tag/release en GitHub, crearlo desde la web sobre el
+  commit de esta pasada de docs.
 - Pasada completa de documentación: README raíz y de la app reescritos (estado
   productivo, estructura, scripts, invariantes), nuevo `docs/ERRORES.md` (catálogo
   de errores con causa raíz, fix y guardarraíl), PENDIENTES y CLAUDE.md al día.
