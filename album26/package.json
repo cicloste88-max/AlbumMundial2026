@@ -15,7 +15,8 @@
     "qa:pwa": "node qa/verify-fv36-pwa.mjs",
     "qa:grid": "node qa/verify-fv37-grid.mjs",
     "qa:ios": "node qa/verify-fv38-ios.mjs",
-    "qa:auth": "node qa/verify-fv40-auth.mjs"
+    "qa:auth": "node qa/verify-fv40-auth.mjs",
+    "qa:collection": "node qa/verify-fv41-collection.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

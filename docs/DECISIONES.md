@@ -308,6 +308,30 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   CDP, con skip documentado si el Chromium no soporta la emulación). Regresión
   completa: 57+24+18+15+24+14+24+13+19 = 208/208.
 
+## Fv4.1 — Panel "Mi colección": progreso global + lista de repes
+
+- (Renumeración del orquestador: el empaquetado nativo pasa a ser Fv5.0.)
+- Panel overlay modal con el patrón del motor (builder HTML-string + delegación):
+  se monta SOLO al abrir y se desmonta al cerrar — presupuesto iOS intacto
+  (medido con el panel abierto: 20 capas / 13MB, muy dentro del ≤60/≤60MB de
+  qa:ios). Lee EXCLUSIVAMENTE el estado hidratado del CloudStore (cero queries
+  propias); el "contador vivo" sale gratis del rebuild por estado.
+- Accesos en la barra de estado (todas las vistas): "▦ MI COLECCIÓN" y
+  "REPES (N)" (abre directo en la pestaña de repes; atenuado si N=0).
+- Pestaña PROGRESO: cabecera K/960 · % · repes; grid de 48 equipos con X/20 y
+  microbarra (dorada al completar 20/20); tap → cierra y navega al pliego
+  (reusa nav de chips). Pestaña REPES: agrupada por equipo,
+  "MEX-11 · ORBELIN PINEDA · x2" (nombres de album-data; slots 1/13 = TEAM
+  LOGO/TEAM PHOTO), COPIAR LISTA → portapapeles en texto plano con formato
+  ESTABLE (snapshot en QA: "Mis repes (N):" + línea por cromo) y toast de
+  confirmación (el toast ganó variante informativa azul además de la de error);
+  estado vacío "Sin repes todavía".
+- Guardas de interacción: con el panel abierto no hay swipe/flechas de página y
+  Escape lo cierra (desktop).
+- QA: `qa/verify-fv41-collection.mjs` (22 checks, `npm run qa:collection`) con el
+  mock stateful de fv40 + clipboard con permisos del contexto. Regresión completa:
+  22 + 57+24+18+15+24+14+24+13+19 = 230/230.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

@@ -22,6 +22,7 @@ npm run qa:pwa     # fv36 · manifest/SW/iconos + img sin src (14)
 npm run qa:grid    # fv37 · invariante "la parrilla manda" (24)
 npm run qa:ios     # fv38 · presupuesto iOS + safe-areas nativas (13)
 npm run qa:auth    # fv40 · auth + progreso en nube con mocks (19)
+npm run qa:collection # fv41 · panel Mi colección (22)
 ```
 
 Las suites necesitan la app corriendo con `QA_AUTH_MOCK=1` (`QA_URL`, default

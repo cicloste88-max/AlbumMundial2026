@@ -20,6 +20,10 @@ Tracker de la colección de cromos del **álbum oficial Panini del Mundial FIFA 
   correo) en `/login`; el progreso se guarda por usuario en Supabase
   (`album_progress`, RLS owner-only) con UI optimista, y te sigue en cualquier
   dispositivo. Sin sesión, todo redirige a `/login` (proxy de @supabase/ssr).
+- **Mi colección (Fv4.1)**: panel con el progreso global (K/960, % y grid de 48
+  equipos con X/20 y microbarra, tap para saltar al pliego) y la lista de repes
+  agrupada por equipo con nombres del álbum y botón "Copiar lista" para
+  compartir por WhatsApp.
 - **PWA**: manifest instalable (standalone, iconos 192/512 servidos desde bucket) y
   service worker mínimo (cache-first para estáticos, network-first para el documento).
 - **Datos verificados**: nombres del álbum oficial contrastados por OCR, federaciones,
@@ -69,6 +73,7 @@ npm run qa:pwa     # manifest/SW/iconos + img sin src (14)
 npm run qa:grid    # invariante "la parrilla manda" (24)
 npm run qa:ios     # presupuesto composición iOS + safe-areas nativas (13)
 npm run qa:auth    # auth + progreso en nube con mocks (19)
+npm run qa:collection # panel Mi colección (22)
 ```
 
 Desde Fv4.0 el server de QA corre con `QA_AUTH_MOCK=1` (el sandbox no llega a

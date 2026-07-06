@@ -26,11 +26,11 @@ npm run qa:movil    # fv31 (57)     npm run qa:geo   # fv35 (24)
 npm run qa:spread   # fv32 (24)     npm run qa:pwa   # fv36 (14)
 npm run qa:verif    # fv33 (18)     npm run qa:grid  # fv37 (24)
 npm run qa:visual   # fv34 (15)     npm run qa:ios   # fv38 (13)
-npm run qa:auth     # fv40 (19)
+npm run qa:auth     # fv40 (19)     npm run qa:collection # fv41 (22)
 ```
 
-Las 9 suites en verde son la regresión completa exigida antes de cada push a `main`
-(estado Fv4.0: 57+24+18+15+24+14+24+13+19 = 208 checks).
+Las 10 suites en verde son la regresión completa exigida antes de cada push a `main`
+(estado Fv4.1: 57+24+18+15+24+14+24+13+19+22 = 230 checks).
 
 Variables: `QA_URL` (default `http://localhost:3000/`), `QA_CHROME` (binario Chromium),
 `QA_OUT` (carpeta de screenshots, default `./qa-shots`).
@@ -81,6 +81,12 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
   recarga contra el mock stateful, logout, revert optimista con fallo forzado y
   manifest/sw/estáticos accesibles sin sesión. El e2e real (signup, confirmación,
   RLS, multidispositivo) se valida en prod.
+- **verify-fv41-collection.mjs** (390×844): panel "Mi colección" — totales K/960
+  y repes desde el estado hidratado, grid 48 equipos con X/20 y microbarra, lista
+  de repes con nombres de album-data y xN, COPIAR LISTA con snapshot exacto del
+  portapapeles, navegación por tap a equipo, ciclo de vida lazy (desmontado al
+  cerrar) con presupuesto de capas dentro de qa:ios, y accesos REPES (N)
+  (atenuado y con estado vacío si N=0).
 - **_mock-auth.mjs**: helper compartido — cookies de sesión (qa-session + sb-*) y
   mocks stateful de `auth/v1` y `rest/v1/album_progress` con CORS/OPTIONS.
 

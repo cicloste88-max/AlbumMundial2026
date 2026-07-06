@@ -50,7 +50,7 @@ solo con src válido (el CSS `.imgslot` sigue en su sitio).
   aterrice en el álbum: añadir la URL del álbum a Auth → URL Configuration
   (decisión suya, es setting global).
 
-## Fv4.1 — Empaquetado nativo iOS + Android (análisis hecho, falta paquete)
+## Fv5.0 — Empaquetado nativo iOS + Android (renumerado desde Fv4.1; análisis hecho, falta paquete)
 
 **Recomendación** (paridad total "funciona y se ve exactamente igual"):
 **Capacitor en modo remoto** — el shell nativo carga la URL de producción en un

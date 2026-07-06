@@ -120,5 +120,6 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
 | Fv3.7 cromos 18-20 a tamaño completo + GROUP en 1 columna | ✅ | ver `git log` |
 | Fv3.8 iOS/Safari: libro móvil con ventana ±2 + sombra ::before + SW guardas | ✅ | ver `git log` |
 | **v1.0.0 PRODUCCIÓN** — gate humano OK (desktop + Safari/iOS) | ✅ | `e3c1705` |
-| Fv4.0 auth registro abierto + progreso en nube (RLS) | ✅ (gate prod: env vars Vercel) | ver `git log` |
-| Fv4.1 empaquetado nativo · req #2 imágenes | ⏸ pendientes | — |
+| Fv4.0 auth registro abierto + progreso en nube (RLS) | ✅ (validada e2e en prod) | ver `git log` |
+| Fv4.1 panel "Mi colección" (progreso global + repes con copia) | ✅ | ver `git log` |
+| Fv5.0 empaquetado nativo (renumerado) · req #2 imágenes | ⏸ pendientes | — |

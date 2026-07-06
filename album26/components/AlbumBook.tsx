@@ -306,6 +306,41 @@ const CSS = `:root{
 .fed .fname{font-weight:800; color:var(--hd1); font-size:calc(var(--w)*.019); line-height:1.15; text-align:left;
      flex:1; min-width:0; max-height:calc(var(--w)*.19); overflow:hidden}
 
+/* --- app Fv4.1: panel "Mi colección" (overlay modal lazy, estética del álbum) --- */
+.rst.dim{opacity:.45}
+.cpanel{position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
+  padding:max(14px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px))
+          max(14px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px))}
+.cp-back{position:absolute; inset:0; background:rgba(25,18,40,.72)}
+.cp-card{position:relative; width:min(560px, 100%); max-height:min(86vh, 720px); display:flex; flex-direction:column;
+  background:var(--paper); border-radius:12px; overflow:hidden; box-shadow:0 14px 26px rgba(0,0,0,.5)}
+.cp-head{background:#1E1B33; padding:14px 16px 0; flex:0 0 auto}
+.cp-trow{display:flex; align-items:center; gap:8px}
+.cp-title{flex:1; color:#fff; font-family:var(--font-baloo),cursive; font-weight:800; font-size:18px; letter-spacing:.02em}
+.cp-x{border:0; background:none; color:#CFC5EE; font-size:18px; line-height:1; cursor:pointer; padding:4px 6px}
+.cp-tabs{display:flex; gap:2px; margin-top:6px}
+.cp-tabs button{flex:1; border:0; background:none; color:#B7ABDD; font-family:inherit; font-weight:800;
+  font-size:13px; letter-spacing:.05em; padding:10px 6px; cursor:pointer}
+.cp-tabs button.on{color:#fff; box-shadow:inset 0 -3px 0 #E8A81E}
+.cp-body{overflow:auto; padding:14px 16px 16px; -webkit-overflow-scrolling:touch}
+.cp-stats{color:var(--ink-dark); font-weight:700; font-size:13.5px; margin-bottom:12px; text-align:center}
+.cp-stats b{font-family:var(--font-baloo),cursive; font-size:16px}
+.cp-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(86px, 1fr)); gap:8px}
+.cp-team{border:0; background:#fff; border-radius:8px; padding:8px 9px 9px; cursor:pointer; text-align:left;
+  font-family:inherit; box-shadow:0 1px 3px rgba(32,21,63,.14); display:block; min-width:0}
+.cp-team .ct-code{display:block; font-weight:800; font-size:13px; color:var(--ink-dark); letter-spacing:.04em}
+.cp-team .ct-count{display:block; font-weight:700; font-size:11.5px; color:#6C5FA0; margin:1px 0 6px}
+.cp-team .ct-bar{display:block; height:4px; border-radius:99px; background:#E2DCCB; overflow:hidden}
+.cp-team .ct-bar i{display:block; height:100%; background:#6FB43F}
+.cp-team.full .ct-bar i{background:#E8A81E}
+.cp-copy{display:block; width:100%; border:0; border-radius:8px; padding:11px; margin-bottom:10px; cursor:pointer;
+  background:#2B1E7E; color:#fff; font-family:var(--font-baloo),cursive; font-weight:800; font-size:14px; letter-spacing:.03em}
+.rg-head{font-weight:800; font-size:12px; letter-spacing:.06em; color:#6C5FA0; margin:10px 0 4px}
+.rg-row{background:#fff; border-radius:6px; padding:7px 10px; margin-bottom:4px; font-weight:600; font-size:13px;
+  color:var(--ink-dark); box-shadow:0 1px 2px rgba(32,21,63,.10)}
+.rg-row b{font-weight:800}
+.cp-empty{text-align:center; color:#6C5FA0; font-weight:600; padding:26px 0 14px; font-size:14px}
+
 /* --- app Fv3.5: título GROUP en una línea + layout móvil quali/pill.
        El rótulo ROAD TO se compone con <span> por palabra: en desktop se apilan
        (display:block = las 4 líneas de la referencia) y en móvil fluyen en línea.
@@ -537,15 +572,102 @@ function statusHTML(page: number, invs: Record<string, InvMap>): string {
     return '<div class="demo-bar"><b>' + T.pais + '</b> · GRUPO ' + T.grupo
       + ' · Pegados ' + got + '/20 · ' + pct + '% · <b>REPES ' + repeTotal + '</b>'
       + '<button class="rst" data-reset data-code="' + code + '" title="Reiniciar este equipo">↺ Reiniciar</button>'
-      + logoutHTML() + '</div>';
+      + panelBtnsHTML(invs) + logoutHTML() + '</div>';
   }
   return '<div class="demo-bar">Álbum Mundial 2026 · <b>48 selecciones</b> · toca un cromo: falta → tengo → repe ×' + MAX_REPES
-    + logoutHTML() + '</div>';
+    + panelBtnsHTML(invs) + logoutHTML() + '</div>';
 }
 
 // Fv4.0: botón discreto de cierre de sesión (solo con Supabase configurado)
 function logoutHTML(): string {
   return supabaseConfigured ? '<button class="rst" data-logout title="Cerrar sesión">⎋ Salir</button>' : '';
+}
+
+/* ---------- Fv4.1: panel "Mi colección" (lee el estado hidratado, sin queries) ---------- */
+function globalStats(invs: Record<string, InvMap>): { got: number; repes: number } {
+  let got = 0, repes = 0;
+  for (const code of ORDER) {
+    const inv = invs[code] || {};
+    for (let s = 1; s <= 20; s++) {
+      const e = inv[K(code, s)];
+      if (e) { got++; repes += e.repes || 0; }
+    }
+  }
+  return { got, repes };
+}
+
+function playerName(code: string, n: number): string {
+  if (n === 1) return 'TEAM LOGO';
+  if (n === 13) return 'TEAM PHOTO';
+  const r = ALBUM_TEAMS[code].roster[String(n)];
+  return (r[0] ? r[0] + ' ' : '') + r[1];
+}
+
+type RepeGroup = { code: string; pais: string; slots: { slot: string; name: string; repes: number }[] };
+function repesList(invs: Record<string, InvMap>): RepeGroup[] {
+  const out: RepeGroup[] = [];
+  for (const code of ORDER) {
+    const inv = invs[code] || {};
+    const slots: RepeGroup['slots'] = [];
+    for (let s = 1; s <= 20; s++) {
+      const e = inv[K(code, s)];
+      if (e && e.state === 'repe' && e.repes > 0) slots.push({ slot: K(code, s), name: playerName(code, s), repes: e.repes });
+    }
+    if (slots.length) out.push({ code, pais: ALBUM_TEAMS[code].pais, slots });
+  }
+  return out;
+}
+
+// texto plano para compartir (formato ESTABLE: hay snapshot en QA)
+function repesText(invs: Record<string, InvMap>): string {
+  const { repes } = globalStats(invs);
+  const lines: string[] = [];
+  for (const g of repesList(invs)) for (const s of g.slots) lines.push(s.slot + ' · ' + s.name + ' · x' + s.repes);
+  return 'Mis repes (' + repes + '):\n' + lines.join('\n');
+}
+
+// botones de acceso al panel (barra de estado, todas las vistas)
+function panelBtnsHTML(invs: Record<string, InvMap>): string {
+  const { repes } = globalStats(invs);
+  return '<button class="rst" data-panel="progreso">▦ MI COLECCIÓN</button>'
+    + '<button class="rst' + (repes === 0 ? ' dim' : '') + '" data-panel="repes">REPES (' + repes + ')</button>';
+}
+
+// overlay modal: se monta SOLO al abrir (presupuesto iOS: cero capas permanentes)
+function panelHTML(tab: 'progreso' | 'repes', invs: Record<string, InvMap>): string {
+  const { got, repes } = globalStats(invs);
+  const pct = Math.round((got / 960) * 100);
+  let body: string;
+  if (tab === 'progreso') {
+    body = '<div class="cp-stats"><b>' + got + '/960</b> pegados · ' + pct + '% · <b>' + repes + '</b> repes</div>'
+      + '<div class="cp-grid">'
+      + ORDER.map((code) => {
+        const inv = invs[code] || {};
+        let g = 0;
+        for (let s = 1; s <= 20; s++) if (inv[K(code, s)]) g++;
+        return '<button class="cp-team' + (g === 20 ? ' full' : '') + '" data-goteam="' + code + '">'
+          + '<span class="ct-code">' + code + '</span><span class="ct-count">' + g + '/20</span>'
+          + '<span class="ct-bar"><i style="width:' + Math.round((g / 20) * 100) + '%"></i></span></button>';
+      }).join('')
+      + '</div>';
+  } else {
+    const groups = repesList(invs);
+    body = groups.length === 0
+      ? '<div class="cp-empty">Sin repes todavía</div>'
+      : '<div class="cp-stats"><b>' + repes + '</b> repes en <b>' + groups.reduce((a, g) => a + g.slots.length, 0) + '</b> cromos</div>'
+        + '<button class="cp-copy" data-copy-repes>⧉ COPIAR LISTA</button>'
+        + groups.map((g) => '<div class="rg-head">' + g.pais + '</div>'
+          + g.slots.map((s) => '<div class="rg-row"><b>' + s.slot + '</b> · ' + s.name + ' · x' + s.repes + '</div>').join('')).join('');
+  }
+  const tabBtn = (t: 'progreso' | 'repes', label: string) =>
+    '<button data-panel-tab="' + t + '"' + (tab === t ? ' class="on"' : '') + '>' + label + '</button>';
+  return '<div class="cpanel" id="cpanel">'
+    + '<div class="cp-back" data-panel-close></div>'
+    + '<div class="cp-card"><div class="cp-head"><div class="cp-trow">'
+    + '<div class="cp-title">MI COLECCIÓN</div>'
+    + '<button class="cp-x" data-panel-close title="Cerrar">✕</button></div>'
+    + '<div class="cp-tabs">' + tabBtn('progreso', 'PROGRESO') + tabBtn('repes', 'REPES (' + repes + ')') + '</div></div>'
+    + '<div class="cp-body">' + body + '</div></div></div>';
 }
 
 function bookHTML(page: number, invs: Record<string, InvMap>): string {
@@ -638,12 +760,13 @@ export default function AlbumBook() {
   invsRef.current = invs;
   const [isDesktop, setIsDesktop] = useState(false);
   const [ready, setReady] = useState(false);   // Fv4.0: hidratación del progreso
-  const [toast, setToast] = useState('');       // Fv4.0: aviso de guardado fallido
+  const [panel, setPanel] = useState<'' | 'progreso' | 'repes'>(''); // Fv4.1: Mi colección
+  const [toast, setToast] = useState<{ msg: string; err: boolean } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const avisar = useCallback((msg: string) => {
-    setToast(msg);
+  const avisar = useCallback((msg: string, err = true) => {
+    setToast({ msg, err });
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(''), 4000);
+    toastTimer.current = setTimeout(() => setToast(null), 4000);
   }, []);
 
   // breakpoint spread: re-render limpio al cruzar 900px
@@ -707,14 +830,16 @@ export default function AlbumBook() {
     el.innerHTML = SYMBOLS + '<style>' + CSS + '</style>'
       + navHTML(page, isDesktop)
       + (isDesktop ? stageHTML(page, invs) : bookHTML(page, invs))
-      + statusHTML(page, invs);
+      + statusHTML(page, invs)
+      // Fv4.1: el panel se monta SOLO al abrir y se desmonta al cerrar
+      + (panel ? panelHTML(panel, invs) : '');
     // centrar el chip activo
     const chips = el.querySelector('#chips') as HTMLElement | null;
     const onChip = chips?.querySelector('.on') as HTMLElement | null;
     if (chips && onChip) chips.scrollLeft = onChip.offsetLeft - chips.clientWidth / 2 + onChip.clientWidth / 2;
     // Fv3.4: ajustar wordmark del header L al ancho disponible
     fitHeaders(el);
-  }, [page, invs, isDesktop, ready]);
+  }, [page, invs, isDesktop, ready, panel]);
 
   // delegación de eventos + swipe (móvil: hojas · desktop: vistas + teclado + drag)
   useEffect(() => {
@@ -746,6 +871,26 @@ export default function AlbumBook() {
       const logout = target.closest('[data-logout]') as HTMLElement | null;
       if (logout) {
         getSupabase().auth.signOut().finally(() => window.location.assign('/login'));
+        return;
+      }
+      // Fv4.1: panel Mi colección
+      const ptab = target.closest('[data-panel-tab]') as HTMLElement | null;
+      if (ptab) { setPanel(ptab.dataset.panelTab as 'progreso' | 'repes'); return; }
+      const pbtn = target.closest('[data-panel]') as HTMLElement | null;
+      if (pbtn) { setPanel(pbtn.dataset.panel as 'progreso' | 'repes'); return; }
+      const pclose = target.closest('[data-panel-close]') as HTMLElement | null;
+      if (pclose) { setPanel(''); return; }
+      const gteam = target.closest('[data-goteam]') as HTMLElement | null;
+      if (gteam) {
+        setPanel('');
+        nav(sheetOf(gteam.dataset.goteam!)); // reusa la navegación de los chips
+        return;
+      }
+      const copyBtn = target.closest('[data-copy-repes]') as HTMLElement | null;
+      if (copyBtn) {
+        navigator.clipboard?.writeText(repesText(invs))
+          .then(() => avisar('Lista copiada al portapapeles ✓', false))
+          .catch(() => avisar('No se pudo copiar la lista.'));
         return;
       }
       const reset = target.closest('[data-reset]') as HTMLElement | null;
@@ -780,6 +925,7 @@ export default function AlbumBook() {
       touchX = ev.touches[0].clientX; touchY = ev.touches[0].clientY;
     };
     const onTouchEnd = (ev: TouchEvent) => {
+      if (panel) return; // Fv4.1: con el panel abierto no se pasa página
       const dx = ev.changedTouches[0].clientX - touchX;
       const dy = ev.changedTouches[0].clientY - touchY;
       if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
@@ -790,6 +936,7 @@ export default function AlbumBook() {
     };
     // desktop: teclado + drag (pointer) por vistas, solo sobre el stage
     const onKey = (ev: KeyboardEvent) => {
+      if (panel) { if (ev.key === 'Escape') setPanel(''); return; } // Fv4.1
       if (ev.key === 'ArrowRight') step(1);
       else if (ev.key === 'ArrowLeft') step(-1);
     };
@@ -799,7 +946,7 @@ export default function AlbumBook() {
       pOn = true; pX = ev.clientX; pY = ev.clientY;
     };
     const onPointerUp = (ev: PointerEvent) => {
-      if (!pOn) return; pOn = false;
+      if (!pOn || panel) return; pOn = false;
       const dx = ev.clientX - pX, dy = ev.clientY - pY;
       if (Math.abs(dx) > 55 && Math.abs(dy) < 70) {
         swipedRef.current = true;
@@ -824,7 +971,7 @@ export default function AlbumBook() {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [page, invs, apply, isDesktop]);
+  }, [page, invs, apply, isDesktop, panel, avisar]);
 
   return (
     <>
@@ -847,13 +994,13 @@ export default function AlbumBook() {
           role="alert"
           style={{
             position: 'fixed', left: '50%', bottom: 'calc(18px + env(safe-area-inset-bottom, 0px))', transform: 'translateX(-50%)',
-            zIndex: 999, background: '#C8481F', color: '#fff', padding: '10px 16px',
+            zIndex: 1001, background: toast.err ? '#C8481F' : '#2B1E7E', color: '#fff', padding: '10px 16px',
             borderRadius: 10, fontWeight: 700, fontSize: 13.5, maxWidth: '92vw',
             fontFamily: 'var(--font-barlow), system-ui, sans-serif',
             boxShadow: '0 6px 18px rgba(0,0,0,.45)',
           }}
         >
-          {toast}
+          {toast.msg}
         </div>
       )}
     </>
