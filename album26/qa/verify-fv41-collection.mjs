@@ -57,7 +57,8 @@ const b = await chromium.launch({ executablePath: EXE });
 
   // (1) totales globales y por equipo
   const stats = await p.evaluate(() => document.querySelector('.cp-stats')?.textContent || '');
-  ok('(1) cabecera: 6/960 pegados y 7 repes', stats.includes('6/960') && stats.includes('7') && stats.includes('repes'), stats);
+  // Fv4.2: el total del álbum pasó de 960 a 992 (25→32 slots especiales añadidos)
+  ok('(1) cabecera: 6/992 pegados y 7 repes', stats.includes('6/992') && stats.includes('7') && stats.includes('repes'), stats);
   const teams = await p.evaluate(() => {
     const get = (c) => {
       const el = [...document.querySelectorAll('.cp-team')].find(t => t.querySelector('.ct-code').textContent === c);

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ORDER, PALETAS, ALBUM_TEAMS, VERIF } from '@/lib/album-data';
 import { getStore, type InvMap, type Entry } from '@/lib/inventory';
 import { getSupabase, supabaseConfigured } from '@/lib/supabase/client';
+import { ESP_PAGES, ESP_SLOTS, ESP_TOTAL, ALBUM_TOTAL, ESP_SECTION_FIRST, type EspPageData, type EspSlot } from '@/lib/album-especiales';
 
 const store = getStore();
 const MAX_REPES = 5;
@@ -29,18 +30,81 @@ const FLAG = (c: string) => FLAG_BASE + c + '.png?v=' + FLAGS_VERSION;
 //  'fillsq'  = alternativa fiel-imprenta: tile cuasi-cuadrado + object-fit fill
 //              (deformación leve como el álbum impreso). NO activar sin gate de San.
 const GROUP_FIT: 'cover43' | 'fillsq' = 'cover43';
-const TOTAL_PAGES = 2 + ORDER.length * 2; // 98
 
 // GRUPOS derivado de ALBUM_TEAMS — idéntico a la constante GRUPOS de la referencia
 const GRUPOS: Record<string, string[]> = {};
 for (const c of ORDER) (GRUPOS[ALBUM_TEAMS[c].grupo] ||= []).push(c);
 
 const K = (t: string, n: number) => t + '-' + n;
-const sheetOf = (code: string) => 2 + ORDER.indexOf(code) * 2;
-// Vistas (desktop spread): [0]=portada [1]=grupos [2..49]=48 pliegos L|R
-const TOTAL_VIEWS = 2 + ORDER.length; // 50
-const viewOfPage = (p: number) => (p < 2 ? p : 2 + Math.floor((p - 2) / 2));
-const pageOfView = (v: number) => (v < 2 ? v : 2 + (v - 2) * 2);
+
+// ============================================================
+// Fv4.2: modelo de PÁGINAS explícito. Antes las páginas se derivaban por
+// fórmula (2 + i*2); las secciones especiales (APERTURA entre GRUPOS y MEX,
+// HISTORY y COCA-COLA tras PAN) obligan a un orden mixto. El render de
+// portada/grupos/equipos NO cambia (misma salida byte a byte): solo cambia la
+// indexación. Adición pura.
+// ============================================================
+type Leaf =
+  | { kind: 'portada' }
+  | { kind: 'grupos' }
+  | { kind: 'special'; esp: number }        // índice en ESP_PAGES
+  | { kind: 'teamL'; code: string }
+  | { kind: 'teamR'; code: string };
+
+const espIdxOf = (section: string) =>
+  ESP_PAGES.map((p, i) => (p.section === section ? i : -1)).filter((i) => i >= 0);
+
+const PAGES: Leaf[] = [
+  { kind: 'portada' },
+  { kind: 'grupos' },
+  ...espIdxOf('apertura').map((i): Leaf => ({ kind: 'special', esp: i })),
+  ...ORDER.flatMap((code): Leaf[] => [{ kind: 'teamL', code }, { kind: 'teamR', code }]),
+  ...espIdxOf('history').map((i): Leaf => ({ kind: 'special', esp: i })),
+  ...espIdxOf('cocacola').map((i): Leaf => ({ kind: 'special', esp: i })),
+];
+const TOTAL_PAGES = PAGES.length; // 109 (98 + 11 especiales)
+
+// Vistas desktop (spread): equipos = pliego L|R; portada/grupos/especiales = página sola.
+const VIEWS: number[][] = [];
+for (let i = 0; i < PAGES.length; i++) {
+  if (PAGES[i].kind === 'teamL') { VIEWS.push([i, i + 1]); i++; } else VIEWS.push([i]);
+}
+const TOTAL_VIEWS = VIEWS.length;
+const PAGE_TO_VIEW: number[] = [];
+VIEWS.forEach((pgs, v) => pgs.forEach((p) => { PAGE_TO_VIEW[p] = v; }));
+const viewOfPage = (p: number) => PAGE_TO_VIEW[Math.max(0, Math.min(TOTAL_PAGES - 1, p))];
+const pageOfView = (v: number) => VIEWS[Math.max(0, Math.min(TOTAL_VIEWS - 1, v))][0];
+
+// mapas de navegación: código de equipo / id de página especial → índice de página
+const CODE_PAGE: Record<string, number> = {};
+const ESP_PAGE: Record<string, number> = {};
+PAGES.forEach((leaf, i) => {
+  if (leaf.kind === 'teamL') CODE_PAGE[leaf.code] = i;
+  if (leaf.kind === 'special') ESP_PAGE[ESP_PAGES[leaf.esp].id] = i;
+});
+const sheetOf = (code: string) => CODE_PAGE[code];
+const FIRST_APERTURA = ESP_PAGE[ESP_SECTION_FIRST.apertura];
+const FIRST_HISTORY = ESP_PAGE[ESP_SECTION_FIRST.history];
+const FIRST_COCACOLA = ESP_PAGE[ESP_SECTION_FIRST.cocacola];
+type Sec = 'portada' | 'grupos' | 'apertura' | 'team' | 'history' | 'cocacola';
+const sectionOfPage = (p: number): Sec => {
+  const leaf = PAGES[p];
+  if (!leaf || leaf.kind === 'portada') return 'portada';
+  if (leaf.kind === 'grupos') return 'grupos';
+  if (leaf.kind === 'special') return ESP_PAGES[leaf.esp].section;
+  return 'team';
+};
+
+// nombre por slot especial (para la lista de repes del panel)
+const ESP_SLOT_NAME: Record<string, string> = {};
+for (const pg of ESP_PAGES) for (const s of pg.slots) ESP_SLOT_NAME[s.k] = s.jugador || s.label || '';
+
+// tema de color de cada sección especial (los tiles heredan de .teampage)
+const ESP_THEME: Record<string, string> = {
+  apertura: '--frame:#2B1E7E;--deep:#20153F;--head:#2B1E7E',
+  history: '--frame:#3A2E7E;--deep:#20153F;--head:#2B1E7E',
+  cocacola: '--frame:#E4002B;--deep:#8A0018;--head:#E4002B',
+};
 const themeStyle = (c: string) => {
   const p = PALETAS[c];
   return '--frame:' + p.frame + ';--deep:' + p.deep + ';--head:' + p.head;
@@ -121,9 +185,14 @@ const CSS = `:root{
 .nav button{border:0; border-radius:8px; padding:9px 4px; background:#2E2350; color:#CFC5EE;
       font-family:inherit; font-weight:700; font-size:12.5px; letter-spacing:.03em; cursor:pointer}
 .nav button.fix{flex:0 0 auto; padding:9px 10px}
-.chips{flex:1; display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
-.chips::-webkit-scrollbar{display:none}
+/* Fv4.2: la tira scrollable envuelve FWC + #chips + HIST + CC (antes el scroll
+   vivía en #chips; los chips de sección extra desbordaban la nav en móvil) */
+.chips-wrap{flex:1; min-width:0; display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch}
+.chips-wrap::-webkit-scrollbar{display:none}
+.chips{display:flex; gap:4px}
 .chips button{flex:0 0 auto; padding:9px 8px; font-size:11.5px}
+/* chips de sección (FWC/HIST/CC), mismo estilo que los de equipo */
+.nav .chip-sec{flex:0 0 auto; padding:9px 8px; font-size:11.5px}
 .nav button.on{background:#E8A81E; color:#20153F}
 .nav button.arrow{flex:0 0 44px; font-size:17px}
 .nav button:disabled{opacity:.35; cursor:default}
@@ -340,6 +409,15 @@ const CSS = `:root{
   color:var(--ink-dark); box-shadow:0 1px 2px rgba(32,21,63,.10)}
 .rg-row b{font-weight:800}
 .cp-empty{text-align:center; color:#6C5FA0; font-weight:600; padding:26px 0 14px; font-size:14px}
+/* Fv4.2: fila ESPECIALES (distinta de los 48 equipos: full-width, destacada) */
+.cp-esp{display:flex; align-items:center; gap:10px; width:100%; border:0; cursor:pointer; text-align:left;
+  background:#2B1E7E; color:#fff; border-radius:8px; padding:11px 13px; margin-bottom:12px;
+  font-family:inherit; box-shadow:0 1px 3px rgba(32,21,63,.2)}
+.cp-esp .ce-code{font-weight:800; font-size:13.5px; letter-spacing:.04em; flex:0 0 auto}
+.cp-esp .ce-count{font-weight:800; font-size:13px; color:#E8CF7A; flex:0 0 auto}
+.cp-esp .ct-bar{flex:1; height:5px; border-radius:99px; background:rgba(255,255,255,.22); overflow:hidden}
+.cp-esp .ct-bar i{display:block; height:100%; background:#E8A81E}
+.cp-esp.full .ct-bar i{background:#6FB43F}
 
 /* --- app Fv3.5: título GROUP en una línea + layout móvil quali/pill.
        El rótulo ROAD TO se compone con <span> por palabra: en desktop se apilan
@@ -394,6 +472,39 @@ const CSS = `:root{
    con object-fit fill — deformación leve como el álbum impreso */
 .gbadge.fillsq .gtile img{display:block; margin-left:20%; width:80%; height:auto; aspect-ratio:5/6; object-fit:fill; flex:none}
 .gbadge.fillsq .gtile .noflag{display:flex; margin-left:20%; width:80%; aspect-ratio:5/6; flex:none}
+
+/* --- app Fv4.2: páginas especiales (APERTURA / HISTORY / COCA-COLA). Reusan
+       .teampage (tema por vars inline) + .tile (mismo cromo: glifo, sticker,
+       tap pegar/repes). Layout propio .esp-* sobre .inner. Adición pura: no
+       tocan portada/grupos/equipos. --- */
+.esppage .inner{gap:calc(var(--w)*.015)}
+.esp-sectitle{font-family:var(--font-baloo),cursive; font-weight:800; color:var(--hd1);
+  font-size:calc(var(--w)*.058); line-height:1; margin:1% 0 1% 1%}
+.esppage.cc .esp-sectitle{color:var(--p-red)}
+.esp-title{font-family:var(--font-baloo),cursive; font-weight:800; color:var(--hd1);
+  font-size:calc(var(--w)*.042); line-height:1.05; margin:1% 0 1% 1%}
+.esp-lema{color:var(--ink-dark); font-weight:700; font-size:calc(var(--w)*.026);
+  line-height:1.25; margin:0 0 2% 1%}
+.esp-note{color:var(--ink-dark); font-weight:600; font-size:calc(var(--w)*.023);
+  line-height:1.3; margin:0 0 1% 1%; opacity:.9}
+.esp-cities{display:grid; grid-template-columns:1fr 1fr; gap:1.5% 4%; margin:1% 1% 2%}
+.esp-city{color:var(--ink-dark); font-weight:700; font-size:calc(var(--w)*.021); line-height:1.2}
+.esp-city span{display:block; font-weight:600; font-size:calc(var(--w)*.017); opacity:.7}
+.esp-finals{display:flex; flex-direction:column; gap:1.6%; margin:1% 1% 2%}
+.esp-final{background:#fff; border-left:calc(var(--w)*.01) solid var(--p-red); border-radius:4px;
+  padding:1.6% 3%; box-shadow:0 1px 3px rgba(32,21,63,.12)}
+.esp-final .fed{font-family:var(--font-baloo),cursive; font-weight:800; color:var(--hd1); font-size:calc(var(--w)*.024)}
+.esp-final .fres{font-weight:700; color:var(--ink-dark); font-size:calc(var(--w)*.022)}
+.esp-final .fdet{font-weight:600; color:#6C5FA0; font-size:calc(var(--w)*.016)}
+.esp-records{margin:1% 1% 2%}
+.esp-records div{background:#fff; border-radius:4px; padding:1.4% 3%; margin-bottom:1.2%;
+  font-weight:700; color:var(--ink-dark); font-size:calc(var(--w)*.021); box-shadow:0 1px 3px rgba(32,21,63,.12)}
+.esp-extra{margin:auto 1% 1%; align-self:flex-start; background:var(--p-red); color:#fff;
+  font-weight:800; font-size:calc(var(--w)*.02); letter-spacing:.06em; padding:1% 3%; border-radius:99px}
+.esp-grid{margin-top:auto}
+.esp-tile .pname .sn{font-size:10cqw}
+.esp-tile .pname .fn{font-size:8cqw; opacity:.75}
+.esppage.cc .esp-tile{--tink:#fff}
 `;
 
 // ---------- estado visual de un cromo ----------
@@ -506,47 +617,93 @@ function pageGrupos(): string {
     + '</div><div class="gnote">48 pliegos · 864 jugadores · nombres del álbum oficial Panini contrastados por OCR</div></div>';
 }
 
+/* ---------- Fv4.2: builders de páginas especiales (reusan .tile) ---------- */
+function espTileHTML(slot: EspSlot, inv: InvMap): string {
+  const k = slot.k;
+  const { ds, badge } = tileState(inv, k);
+  const parts = k.split('-');
+  const codeTop = parts.length > 1 ? parts[0] + '<br>' + parts[1] : k;
+  const sc = parts.length > 1 ? parts[0] + ' ' + parts[1] : k;
+  const name = slot.jugador
+    ? '<span class="sn">' + slot.jugador.toUpperCase() + '</span>' + (slot.pais ? '<span class="fn">' + slot.pais + '</span>' : '')
+    : (slot.label ? '<span class="fn">' + slot.label + '</span>' : '<span class="pend">STICKER</span>');
+  const sn2 = slot.jugador ? slot.jugador.toUpperCase() : (slot.label || '');
+  return '<div class="tile esp-tile" data-tile="' + k + '" data-state="' + ds + '">'
+    + '<svg class="g g2"><use href="#g2"/></svg><svg class="g g6"><use href="#g6"/></svg>'
+    + '<div class="code">' + codeTop + '</div><div class="pname">' + name + '</div>'
+    + '<div class="sticker"><div class="art"><div class="sc">' + sc + '</div><div class="sn2">' + sn2 + '</div></div></div>'
+    + '<div class="badge-rep">' + badge + '</div>'
+    + '<div class="step"><button data-act="minus" data-k="' + k + '">−</button>'
+    + '<button data-act="plus" data-k="' + k + '">+</button></div></div>';
+}
+
+function espPageHTML(pg: EspPageData, invs: Record<string, InvMap>): string {
+  const inv = invs[pg.slots[0].k.split('-')[0]] || {};
+  let head = '';
+  if (pg.tituloSeccion) head += '<div class="esp-sectitle">' + pg.tituloSeccion + '</div>';
+  if (pg.titulo) head += '<div class="esp-title">' + pg.titulo + '</div>';
+  if (pg.lema) head += '<div class="esp-lema">' + pg.lema + '</div>';
+  if (pg.nota) head += '<div class="esp-note">' + pg.nota + '</div>';
+  if (pg.ciudades) head += '<div class="esp-cities">' + pg.ciudades.map((c) =>
+    '<div class="esp-city">' + c.n + (c.estadio ? '<span>' + c.estadio + '</span>' : '') + '</div>').join('') + '</div>';
+  if (pg.finales) head += '<div class="esp-finals">' + pg.finales.map((f) =>
+    '<div class="esp-final"><div class="fed">' + f.ed + '</div><div class="fres">' + f.res + '</div>'
+    + (f.detalle ? '<div class="fdet">' + f.detalle + '</div>' : '') + '</div>').join('') + '</div>';
+  if (pg.textos) head += '<div class="esp-records">' + pg.textos.map((t) => '<div>' + t + '</div>').join('') + '</div>';
+  const tiles = '<div class="grid esp-grid">' + pg.slots.map((s) => espTileHTML(s, inv)).join('') + '</div>';
+  const extra = pg.extra ? '<div class="esp-extra">' + pg.extra + '</div>' : '';
+  return '<div class="teampage esppage ' + pg.section + '" style="position:absolute;inset:0;' + ESP_THEME[pg.section] + '">'
+    + '<div class="inner">' + head + tiles + extra + '</div></div>';
+}
+
 /* ---------- shell (nav + libro + barra de estado) ---------- */
 function pageHTML(p: number, invs: Record<string, InvMap>): string {
-  if (p === 0) return pagePortada();
-  if (p === 1) return pageGrupos();
-  const i = Math.floor((p - 2) / 2);
-  if (i < 0 || i >= ORDER.length) return '';
-  const code = ORDER[i];
-  const inv = invs[code] || {};
-  return (p - 2) % 2 === 0 ? pageEquipoL(code, inv) : pageEquipoR(code, inv);
+  const leaf = PAGES[p];
+  if (!leaf) return '';
+  if (leaf.kind === 'portada') return pagePortada();
+  if (leaf.kind === 'grupos') return pageGrupos();
+  if (leaf.kind === 'special') return espPageHTML(ESP_PAGES[leaf.esp], invs);
+  const inv = invs[leaf.code] || {};
+  return leaf.kind === 'teamL' ? pageEquipoL(leaf.code, inv) : pageEquipoR(leaf.code, inv);
 }
 
 function navHTML(page: number, isDesktop: boolean): string {
-  const on = (t: number) => page === t || (page === t + 1 && t >= 2);
+  const sec = sectionOfPage(page);
   const atEnd = isDesktop ? viewOfPage(page) === TOTAL_VIEWS - 1 : page === TOTAL_PAGES - 1;
-  const chips = ORDER.map((c) => {
-    const t = sheetOf(c);
-    return '<button' + (on(t) ? ' class="on"' : '') + ' data-goto="' + t + '">' + c + '</button>';
-  }).join('');
+  // los chips de EQUIPO siguen siendo exactamente 48 dentro de #chips (las suites
+  // dependen de ello); los chips de sección (FWC/HIST/CC) van fuera, estilo idéntico:
+  // FWC antes de #chips (→ antes de MEX), HIST/CC después (→ tras PAN). Fv4.2.
+  const teamOn = (c: string) => viewOfPage(page) === viewOfPage(sheetOf(c));
+  const chips = ORDER.map((c) =>
+    '<button' + (teamOn(c) ? ' class="on"' : '') + ' data-goto="' + sheetOf(c) + '">' + c + '</button>').join('');
+  const secChip = (label: string, goto: number, active: boolean) =>
+    '<button class="chip-sec' + (active ? ' on' : '') + '" data-goto="' + goto + '">' + label + '</button>';
+  // toda la tira (FWC · 48 equipos · HIST · CC) va en UN scroll horizontal para no
+  // desbordar la nav en móvil; #chips conserva SOLO los 48 chips de equipo.
   return '<div class="nav" id="nav">'
     + '<button class="fix arrow" data-nav="prev"' + (page === 0 ? ' disabled' : '') + '>‹</button>'
-    + '<button class="fix' + (on(0) ? ' on' : '') + '" data-goto="0">PORTADA</button>'
-    + '<button class="fix' + (on(1) ? ' on' : '') + '" data-goto="1">GRUPOS</button>'
+    + '<button class="fix' + (sec === 'portada' ? ' on' : '') + '" data-goto="0">PORTADA</button>'
+    + '<button class="fix' + (sec === 'grupos' ? ' on' : '') + '" data-goto="1">GRUPOS</button>'
+    + '<div class="chips-wrap">'
+    + secChip('FWC', FIRST_APERTURA, sec === 'apertura')
     + '<div class="chips" id="chips">' + chips + '</div>'
+    + secChip('HIST', FIRST_HISTORY, sec === 'history')
+    + secChip('CC', FIRST_COCACOLA, sec === 'cocacola')
+    + '</div>'
     + '<button class="fix arrow" data-nav="next"' + (atEnd ? ' disabled' : '') + '>›</button>'
     + '</div>';
 }
 
-// Desktop: vista = pliego completo (L|R) o página única (portada/grupos)
+// Desktop: vista = pliego completo (L|R) o página única (portada/grupos/especial)
 function spreadViewHTML(v: number, invs: Record<string, InvMap>, current: boolean): string {
   if (v < 0 || v >= TOTAL_VIEWS) return '';
-  let inner: string;
-  if (v === 0) inner = '<div class="spage solo">' + pagePortada() + '</div>';
-  else if (v === 1) inner = '<div class="spage solo">' + pageGrupos() + '</div>';
-  else {
-    const code = ORDER[v - 2];
-    const inv = invs[code] || {};
-    inner = '<div class="spage l">' + pageEquipoL(code, inv) + '</div>'
-      + '<div class="spage r">' + pageEquipoR(code, inv) + '</div>'
+  const pgs = VIEWS[v];
+  const inner = pgs.length === 1
+    ? '<div class="spage solo">' + pageHTML(pgs[0], invs) + '</div>'
+    : '<div class="spage l">' + pageHTML(pgs[0], invs) + '</div>'
+      + '<div class="spage r">' + pageHTML(pgs[1], invs) + '</div>'
       + '<div class="spine"></div>';
-  }
-  return '<div class="view spread' + (v < 2 ? ' single' : '') + '" data-view="' + v + '"'
+  return '<div class="view spread' + (pgs.length === 1 ? ' single' : '') + '" data-view="' + v + '"'
     + (current ? ' data-current="1"' : ' style="display:none"') + '>' + inner + '</div>';
 }
 
@@ -559,8 +716,9 @@ function stageHTML(page: number, invs: Record<string, InvMap>): string {
 }
 
 function statusHTML(page: number, invs: Record<string, InvMap>): string {
-  if (page >= 2) {
-    const code = ORDER[Math.floor((page - 2) / 2)];
+  const leaf = PAGES[page];
+  if (leaf && (leaf.kind === 'teamL' || leaf.kind === 'teamR')) {
+    const code = leaf.code;
     const T = ALBUM_TEAMS[code];
     const inv = invs[code] || {};
     let got = 0, repeTotal = 0;
@@ -584,16 +742,24 @@ function logoutHTML(): string {
 }
 
 /* ---------- Fv4.1: panel "Mi colección" (lee el estado hidratado, sin queries) ---------- */
+// Fv4.2: los totales globales incluyen las 32 claves especiales (00/FWC/CC) →
+// K/992. El contador POR EQUIPO sigue siendo X/20 (statusHTML, intacto).
+const entryOf = (invs: Record<string, InvMap>, key: string): Entry | undefined =>
+  (invs[key.split('-')[0]] || {})[key];
+
 function globalStats(invs: Record<string, InvMap>): { got: number; repes: number } {
   let got = 0, repes = 0;
-  for (const code of ORDER) {
-    const inv = invs[code] || {};
-    for (let s = 1; s <= 20; s++) {
-      const e = inv[K(code, s)];
-      if (e) { got++; repes += e.repes || 0; }
-    }
-  }
+  const acc = (key: string) => { const e = entryOf(invs, key); if (e) { got++; repes += e.repes || 0; } };
+  for (const code of ORDER) for (let s = 1; s <= 20; s++) acc(K(code, s));
+  for (const k of ESP_SLOTS) acc(k);
   return { got, repes };
+}
+
+// pegados de la sección ESPECIALES (para la fila X/32 del panel)
+function espGot(invs: Record<string, InvMap>): number {
+  let g = 0;
+  for (const k of ESP_SLOTS) if (entryOf(invs, k)) g++;
+  return g;
 }
 
 function playerName(code: string, n: number): string {
@@ -615,14 +781,26 @@ function repesList(invs: Record<string, InvMap>): RepeGroup[] {
     }
     if (slots.length) out.push({ code, pais: ALBUM_TEAMS[code].pais, slots });
   }
+  // Fv4.2: repes de especiales agrupadas al final (código + nombre si existe)
+  const esp: RepeGroup['slots'] = [];
+  for (const k of ESP_SLOTS) {
+    const e = entryOf(invs, k);
+    // nombre en mayúsculas para casar con los cromos de equipo de la lista
+    if (e && e.state === 'repe' && e.repes > 0) esp.push({ slot: k, name: (ESP_SLOT_NAME[k] || '').toUpperCase(), repes: e.repes });
+  }
+  if (esp.length) out.push({ code: 'ESP', pais: 'ESPECIALES', slots: esp });
   return out;
 }
+
+// una línea de repe: "SLOT · NOMBRE · xN" (el nombre se omite si no existe)
+const repeRow = (slot: string, name: string, repes: number) =>
+  slot + (name ? ' · ' + name : '') + ' · x' + repes;
 
 // texto plano para compartir (formato ESTABLE: hay snapshot en QA)
 function repesText(invs: Record<string, InvMap>): string {
   const { repes } = globalStats(invs);
   const lines: string[] = [];
-  for (const g of repesList(invs)) for (const s of g.slots) lines.push(s.slot + ' · ' + s.name + ' · x' + s.repes);
+  for (const g of repesList(invs)) for (const s of g.slots) lines.push(repeRow(s.slot, s.name, s.repes));
   return 'Mis repes (' + repes + '):\n' + lines.join('\n');
 }
 
@@ -636,10 +814,15 @@ function panelBtnsHTML(invs: Record<string, InvMap>): string {
 // overlay modal: se monta SOLO al abrir (presupuesto iOS: cero capas permanentes)
 function panelHTML(tab: 'progreso' | 'repes', invs: Record<string, InvMap>): string {
   const { got, repes } = globalStats(invs);
-  const pct = Math.round((got / 960) * 100);
+  const pct = Math.round((got / ALBUM_TOTAL) * 100);
   let body: string;
   if (tab === 'progreso') {
-    body = '<div class="cp-stats"><b>' + got + '/960</b> pegados · ' + pct + '% · <b>' + repes + '</b> repes</div>'
+    const eg = espGot(invs);
+    body = '<div class="cp-stats"><b>' + got + '/' + ALBUM_TOTAL + '</b> pegados · ' + pct + '% · <b>' + repes + '</b> repes</div>'
+      // Fv4.2: fila ESPECIALES (X/32) — distinta de los 48 equipos (.cp-team)
+      + '<button class="cp-esp' + (eg === ESP_TOTAL ? ' full' : '') + '" data-gospecial>'
+      + '<span class="ce-code">★ ESPECIALES</span><span class="ce-count">' + eg + '/' + ESP_TOTAL + '</span>'
+      + '<span class="ct-bar"><i style="width:' + Math.round((eg / ESP_TOTAL) * 100) + '%"></i></span></button>'
       + '<div class="cp-grid">'
       + ORDER.map((code) => {
         const inv = invs[code] || {};
@@ -657,7 +840,7 @@ function panelHTML(tab: 'progreso' | 'repes', invs: Record<string, InvMap>): str
       : '<div class="cp-stats"><b>' + repes + '</b> repes en <b>' + groups.reduce((a, g) => a + g.slots.length, 0) + '</b> cromos</div>'
         + '<button class="cp-copy" data-copy-repes>⧉ COPIAR LISTA</button>'
         + groups.map((g) => '<div class="rg-head">' + g.pais + '</div>'
-          + g.slots.map((s) => '<div class="rg-row"><b>' + s.slot + '</b> · ' + s.name + ' · x' + s.repes + '</div>').join('')).join('');
+          + g.slots.map((s) => '<div class="rg-row">' + repeRow('<b>' + s.slot + '</b>', s.name, s.repes) + '</div>').join('')).join('');
   }
   const tabBtn = (t: 'progreso' | 'repes', label: string) =>
     '<button data-panel-tab="' + t + '"' + (tab === t ? ' class="on"' : '') + '>' + label + '</button>';
@@ -833,10 +1016,13 @@ export default function AlbumBook() {
       + statusHTML(page, invs)
       // Fv4.1: el panel se monta SOLO al abrir y se desmonta al cerrar
       + (panel ? panelHTML(panel, invs) : '');
-    // centrar el chip activo
-    const chips = el.querySelector('#chips') as HTMLElement | null;
-    const onChip = chips?.querySelector('.on') as HTMLElement | null;
-    if (chips && onChip) chips.scrollLeft = onChip.offsetLeft - chips.clientWidth / 2 + onChip.clientWidth / 2;
+    // centrar el chip activo (Fv4.2: el scroll vive en .chips-wrap, no en #chips)
+    const wrap = el.querySelector('.chips-wrap') as HTMLElement | null;
+    const onChip = wrap?.querySelector('.on') as HTMLElement | null;
+    if (wrap && onChip) {
+      const wr = wrap.getBoundingClientRect(), cr = onChip.getBoundingClientRect();
+      wrap.scrollLeft += (cr.left - wr.left) - wrap.clientWidth / 2 + cr.width / 2;
+    }
     // Fv3.4: ajustar wordmark del header L al ancho disponible
     fitHeaders(el);
   }, [page, invs, isDesktop, ready, panel]);
@@ -886,6 +1072,8 @@ export default function AlbumBook() {
         nav(sheetOf(gteam.dataset.goteam!)); // reusa la navegación de los chips
         return;
       }
+      const gspecial = target.closest('[data-gospecial]') as HTMLElement | null;
+      if (gspecial) { setPanel(''); nav(FIRST_APERTURA); return; } // Fv4.2: fila ESPECIALES
       const copyBtn = target.closest('[data-copy-repes]') as HTMLElement | null;
       if (copyBtn) {
         navigator.clipboard?.writeText(repesText(invs))

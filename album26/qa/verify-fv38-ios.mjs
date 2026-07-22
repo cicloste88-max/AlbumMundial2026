@@ -43,17 +43,28 @@ const sheetInfo = () => p.evaluate(() => ({
   pages: [...document.querySelectorAll('.sheet')].map(s => +s.dataset.page),
 }));
 
-// (a) ventana de hojas
+// (a) ventana de hojas — Fv4.2: posición-independiente (las secciones especiales
+// insertadas desplazan los índices; la propiedad verificada sigue siendo "ventana
+// actual±2 contigua"). Ya no se hardcodea MEX=hoja 2.
+const windowOk = (si, expectCur) => {
+  const pages = si.pages;
+  if (si.n < 3 || si.n > 5) return false;
+  if (expectCur !== undefined && si.cur !== String(expectCur)) return false;
+  const cur = +si.cur;
+  const contig = pages.every((v, i) => i === 0 || v === pages[i - 1] + 1);
+  return contig && pages.includes(cur) && cur - pages[0] <= 2 && pages[pages.length - 1] - cur <= 2;
+};
 let si = await sheetInfo();
-ok('(a) portada: 3 hojas montadas (0..2), current=0', si.n === 3 && si.cur === '0' && si.pages.join() === '0,1,2', JSON.stringify(si));
+ok('(a) portada: ventana actual±2 (3 hojas, current=0)', si.n === 3 && windowOk(si, 0) && si.pages.join() === '0,1,2', JSON.stringify(si));
 await p.evaluate(() => { [...document.querySelectorAll('#chips button')].find(x => x.textContent === 'MEX')?.click(); });
 await p.waitForTimeout(400);
 si = await sheetInfo();
-ok('(a) MEX (hoja 2): 5 hojas montadas actual±2', si.n === 5 && si.cur === '2' && si.pages.join() === '0,1,2,3,4', JSON.stringify(si));
+const mexPage = +si.cur;
+ok('(a) MEX: 5 hojas montadas actual±2 (ventana contigua)', si.n === 5 && windowOk(si), JSON.stringify(si));
 await p.evaluate(() => document.querySelector('[data-nav="next"]').click());
 await p.waitForTimeout(500);
 si = await sheetInfo();
-ok('(a) next: ventana desplazada (1..5), current=3', si.n === 5 && si.cur === '3' && si.pages.join() === '1,2,3,4,5', JSON.stringify(si));
+ok('(a) next: ventana desplazada +1 (current=MEX+1)', si.n === 5 && windowOk(si, mexPage + 1), JSON.stringify(si));
 
 // (d) salto lejano por chip y contenido visible
 await p.evaluate(() => { [...document.querySelectorAll('#chips button')].find(x => x.textContent === 'PAN')?.click(); });

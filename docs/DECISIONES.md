@@ -332,6 +332,49 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   mock stateful de fv40 + clipboard con permisos del contexto. Regresión completa:
   22 + 57+24+18+15+24+14+24+13+19 = 230/230.
 
+## Fv4.2 — Secciones especiales del álbum (00 / FWC-1..19 / CC-1..12, +32 slots)
+
+- **Bloqueo y resolución de datos**: v1 del payload `album-especiales` (md5 7d71481e)
+  se contradecía (cabecera 25/985 vs 34 slots enumerados). Se PARÓ y reportó
+  (`fv42-status` blocked). San corrigió a **v2** (md5 fc2d26d5, verificado server+local):
+  CC son 12 (no 14), totales correctos **32 slots nuevos / 992 total** (960+32).
+  El calendario del álbum físico se OMITE (decisión de San). La distribución de
+  históricos FWC-9..19 (2+2+2+2+3) queda pendiente del gate; se renderiza lo que
+  trae v2 (si San la cambia → v3 solo de datos, sin tocar layout).
+- **Datos**: `lib/album-especiales.ts` GENERADO por script desde v2 (11 páginas,
+  32 claves canónicas, ESP_TOTAL=32, ALBUM_TOTAL=992). No editar a mano.
+- **Adición pura** (restricción dura): el render de portada/grupos/equipos NO cambia.
+  Se introdujo un **modelo de páginas explícito** (`PAGES`/`VIEWS`): antes el índice
+  de página era una fórmula (2+i*2); ahora es un array que intercala APERTURA (4
+  vistas entre GRUPOS y MEX), HISTORY (5 tras PAN) y COCA-COLA (2 tras History).
+  Los builders `pageEquipoL/R`, `pagePortada`, `pageGrupos` quedan intactos; solo
+  cambia la indexación (sheetOf, viewOfPage, statusHTML, nav derivan del array).
+  **Prueba dura: R de MEX byte-idéntico antes/después** (md5 igual; assert
+  permanente en fv42 con pixel-diff 0 contra baseline commiteado).
+- **Vistas especiales**: reusan `.teampage` (tema por vars inline: navy apertura/
+  history, rojo #E4002B cocacola) + `.tile` (mismo cromo: glifo 26, sticker, tap
+  pegar/repes). Layout `.esp-*` propio (títulos, ciudades con estadio, finales
+  históricas, records, lema Coca-Cola, nombres+país de los 12 CC; CC-10 sin país
+  como trae v2). Slots con clave canónica literal en `data-tile` ("00","FWC-1",
+  "CC-1"): el motor de tap/apply/CloudStore los trata igual (split('-')[0]).
+- **Navegación**: chips FWC (antes de MEX), HIST y CC (tras PAN), estilo idéntico.
+  Van en una tira scroll `.chips-wrap` que envuelve FWC+#chips+HIST+CC —
+  **#chips conserva EXACTAMENTE los 48 chips de equipo** (las suites dependen de
+  ello). El scroll horizontal pasó de #chips a .chips-wrap (fv35 detectó que los 3
+  chips extra desbordaban la nav en móvil; el check de desborde documento hizo su
+  trabajo).
+- **Progreso/panel**: totales globales K/992 y fila **ESPECIALES X/32** (clase
+  `.cp-esp` distinta de los 48 `.cp-team` — el grid de equipos sigue siendo 48);
+  repes de especiales en la lista con código + nombre (mayúsculas para casar con
+  los equipos). El contador POR EQUIPO sigue X/20 intacto.
+- **iOS**: las 11 vistas entran en la ventana ±2 (son más ligeras que un pliego);
+  qa:ios verde. **Fixtures forzados por la adición** (documentados, no ocultan
+  regresión — la garantía real es el MEX-R byte-idéntico): fv38 (a) hecho
+  posición-independiente (MEX ya no es la hoja 2 al insertarse apertura; se verifica
+  "ventana ±2 contigua" sin hardcodear el índice) y fv41 cabecera 960→992.
+- **QA**: `qa/verify-fv42-especiales.mjs` (21 checks). Regresión completa:
+  21 + 57+24+18+15+24+14+24+13+19+22 = 251/251.
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

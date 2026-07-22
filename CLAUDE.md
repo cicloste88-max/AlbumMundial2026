@@ -41,6 +41,7 @@ album26/                  la app (Root Directory en Vercel)
 │   └── AlbumPage.tsx     LEGACY (F0, Grupo A) — no borrar hasta gate humano
 ├── lib/
 │   ├── album-data.ts     GENERADO desde build_handoff k=album-data-v3 — NO editar a mano
+│   ├── album-especiales.ts GENERADO desde k=album-especiales v2 (Fv4.2: 00/FWC/CC, 32 slots)
 │   ├── inventory.ts      persistencia conmutable: CloudStore (album_progress, Fv4.0)
 │   │                     con LocalStore de fallback sin configuración
 │   ├── supabase/         client.ts (browser singleton) · server.ts (route handlers)
@@ -122,4 +123,5 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
 | **v1.0.0 PRODUCCIÓN** — gate humano OK (desktop + Safari/iOS) | ✅ | `e3c1705` |
 | Fv4.0 auth registro abierto + progreso en nube (RLS) | ✅ (validada e2e en prod) | ver `git log` |
 | Fv4.1 panel "Mi colección" (progreso global + repes con copia) | ✅ | ver `git log` |
+| Fv4.2 secciones especiales 00/FWC/CC (+32 slots, 992 total) | ✅ | ver `git log` |
 | Fv5.0 empaquetado nativo (renumerado) · req #2 imágenes | ⏸ pendientes | — |
