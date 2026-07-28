@@ -28,6 +28,13 @@ Tracker de la colección de cromos del **álbum oficial Panini del Mundial FIFA 
   32 cromos especiales — Roll of Honour, Welcome, ciudades sede (00 · FWC-1..19)
   e historia del Mundial + Coca-Cola (CC-1..12) — con su navegación (chips FWC /
   HIST / CC) e integrados en el progreso y en los repes. Total del álbum: 992.
+- **Compartir colección (Fv4.4)**: hoja COMPARTIR en el panel con tu **QR** en dos
+  formatos — enlace nativo (se abre sin cuenta en `/s`; los datos viajan en el
+  fragment `#…` y no tocan el servidor) o **compatible con la app "Usa Mex Can 26"**
+  —, alias editable, **Escanear QR** (cámara) o **Subir imagen QR**, y al leer el QR
+  de otro coleccionista el **cruce local**: "le puedes dar / te puede dar" con
+  cantidades. Botones "Compartir FALTAN/REPES" como texto (Web Share API o
+  portapapeles) listos para WhatsApp.
 - **PWA**: manifest instalable (standalone, iconos 192/512 servidos desde bucket) y
   service worker mínimo (cache-first para estáticos, network-first para el documento).
 - **Datos verificados**: nombres del álbum oficial contrastados por OCR, federaciones,
@@ -38,9 +45,11 @@ Tracker de la colección de cromos del **álbum oficial Panini del Mundial FIFA 
 
 ```
 album26/          la app (Next.js 16 App Router + TypeScript, sin Tailwind)
-├── app/          layout (fuentes, PWA meta, registro SW) · globals.css · page.tsx
+├── app/          layout (fuentes, PWA meta, registro SW) · globals.css · page.tsx ·
+│                 login/ · auth/ · s/ (vista pública de colección compartida)
 ├── components/   AlbumBook.tsx (motor + visual del libro) · AlbumPage.tsx (legacy F0)
 ├── lib/          album-data.ts (GENERADO, no editar a mano) · inventory.ts (persistencia)
+│                 · share.ts (QR nativo + interop UsaMexCan + textos de compartir)
 ├── public/       fuente FWC26 · manifest.webmanifest · sw.js
 ├── qa/           suites Playwright de regresión permanente (ver qa/README.md)
 └── supabase/     schema.sql para F1 (sin aplicar)
@@ -79,6 +88,7 @@ npm run qa:ios     # presupuesto composición iOS + safe-areas nativas (13)
 npm run qa:auth    # auth + progreso en nube con mocks (19)
 npm run qa:collection # panel Mi colección (22)
 npm run qa:especiales # secciones especiales 00/FWC/CC (21)
+npm run qa:share   # compartir: QR nativo + interop + cruce e2e (24)
 ```
 
 Desde Fv4.0 el server de QA corre con `QA_AUTH_MOCK=1` (el sandbox no llega a

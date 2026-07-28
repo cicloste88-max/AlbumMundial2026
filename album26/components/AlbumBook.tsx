@@ -409,6 +409,31 @@ const CSS = `:root{
   color:var(--ink-dark); box-shadow:0 1px 2px rgba(32,21,63,.10)}
 .rg-row b{font-weight:800}
 .cp-empty{text-align:center; color:#6C5FA0; font-weight:600; padding:26px 0 14px; font-size:14px}
+/* --- app Fv4.4: hoja COMPARTIR (QR + escanear + textos) --- */
+.sh-fmt{display:flex; gap:6px; margin-bottom:10px}
+.sh-fmt button{flex:1; border:2px solid #D8D2C2; background:#fff; border-radius:8px; padding:9px 6px; cursor:pointer;
+  font-family:inherit; font-weight:800; font-size:12.5px; letter-spacing:.04em; color:#6C5FA0}
+.sh-fmt button.on{border-color:#2B1E7E; color:#20153F; background:#EDE9FA}
+.sh-qrwrap{display:flex; justify-content:center; padding:4px 0 8px}
+.sh-qrwrap canvas{width:min(64vw,260px)!important; height:auto!important; border-radius:8px;
+  box-shadow:0 2px 10px rgba(32,21,63,.18); background:#fff}
+.sh-cap{color:#6C5FA0; font-weight:600; font-size:12px; text-align:center; margin-bottom:10px; line-height:1.35}
+.sh-alias{display:flex; align-items:center; gap:8px; font-weight:800; font-size:11.5px; color:#20153F;
+  letter-spacing:.05em; margin-bottom:10px}
+.sh-alias input{flex:1; border:2px solid #D8D2C2; border-radius:8px; padding:8px 10px; font-family:inherit;
+  font-size:14px; color:#20153F; background:#fff; outline:none; min-width:0}
+.sh-alias input:focus{border-color:#2B1E7E}
+.sh-row{display:flex; gap:8px}
+.sh-row .cp-copy{flex:1; margin-bottom:8px; text-align:center; font-size:12.5px; padding:10px 6px}
+.sh-row .cp-copy.alt{background:#6C5FA0}
+.sh-filebtn{display:flex; align-items:center; justify-content:center; cursor:pointer}
+.sh-scan{margin:6px 0 10px}
+.sh-scan video{width:100%; border-radius:10px; background:#000; aspect-ratio:1/1; object-fit:cover}
+.sh-scan .cp-copy.stop{margin-top:8px; background:#C8481F; width:100%}
+.sh-cruce{margin-top:8px; border-top:2px solid #E2DCCB; padding-top:10px}
+.sh-crh{font-weight:700; font-size:13.5px; color:#20153F; margin-bottom:2px}
+.sh-crh .sh-note{color:#6C5FA0; font-weight:600; font-size:11.5px}
+.sh-cruce .cp-copy{margin-top:8px}
 /* Fv4.2: fila ESPECIALES (distinta de los 48 equipos: full-width, destacada) */
 .cp-esp{display:flex; align-items:center; gap:10px; width:100%; border:0; cursor:pointer; text-align:left;
   background:#2B1E7E; color:#fff; border-radius:8px; padding:11px 13px; margin-bottom:12px;
@@ -811,8 +836,48 @@ function panelBtnsHTML(invs: Record<string, InvMap>): string {
     + '<button class="rst' + (repes === 0 ? ' dim' : '') + '" data-panel="repes">REPES (' + repes + ')</button>';
 }
 
+/* ---------- Fv4.4: hoja COMPARTIR (QR nativo + interop UsaMexCan + textos) ---------- */
+type ShareFmt = 'a26' | 'umc';
+type ScanRes = {
+  alias: string; sinCantidad: boolean; nDoy: number; nDa: number;
+  leDoy: string[]; meDa: string[]; copyText: string;
+};
+type ShareCtx = { fmt: ShareFmt; alias: string; scanning: boolean; scanRes: ScanRes | null };
+const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function shareBodyHTML(sh: ShareCtx): string {
+  const rows = (l: string[]) => (l.length ? l.map((x) => '<div class="rg-row">' + x + '</div>').join('') : '<div class="cp-empty">—</div>');
+  return '<div class="sh-fmt">'
+    + '<button data-share-fmt="a26"' + (sh.fmt === 'a26' ? ' class="on"' : '') + '>ÁLBUM26</button>'
+    + '<button data-share-fmt="umc"' + (sh.fmt === 'umc' ? ' class="on"' : '') + '>USAMEXCAN</button></div>'
+    + '<div class="sh-qrwrap"><canvas id="share-qr" width="260" height="260"></canvas></div>'
+    + '<div class="sh-cap">' + (sh.fmt === 'umc'
+      ? 'QR compatible con la app "Usa Mex Can 26" (su formato no lleva cantidades de repes).'
+      : 'QR del Álbum26: enlace con tus faltas y repes (con cantidades). Se abre sin cuenta.') + '</div>'
+    + '<label class="sh-alias">ALIAS<input id="share-alias" maxlength="24" placeholder="Coleccionista" value="' + escAttr(sh.alias) + '"></label>'
+    + '<div class="sh-row">'
+    + '<button class="cp-copy sh-half" data-share-scan>📷 ESCANEAR QR</button>'
+    + '<label class="cp-copy sh-half sh-filebtn">🖼 SUBIR IMAGEN QR<input type="file" id="share-file" accept="image/*" hidden></label></div>'
+    + '<div class="sh-row">'
+    + '<button class="cp-copy alt" data-share-text="faltan">COMPARTIR FALTAN</button>'
+    + '<button class="cp-copy alt" data-share-text="repes">COMPARTIR REPES</button></div>'
+    + (sh.scanning
+      ? '<div class="sh-scan"><video id="share-video" playsinline muted autoplay></video>'
+        + '<button class="cp-copy stop" data-share-scan-stop>CANCELAR CÁMARA</button></div>'
+      : '')
+    + (sh.scanRes
+      ? '<div class="sh-cruce" id="sh-cruce">'
+        + '<div class="sh-crh">Cruce con <b>' + escAttr(sh.scanRes.alias) + '</b>'
+        + (sh.scanRes.sinCantidad ? ' <span class="sh-note">(sus repes sin cantidad: x1)</span>' : '') + '</div>'
+        + '<div class="rg-head">LE PUEDES DAR (' + sh.scanRes.nDoy + ')</div>' + rows(sh.scanRes.leDoy)
+        + '<div class="rg-head">TE PUEDE DAR (' + sh.scanRes.nDa + ')</div>' + rows(sh.scanRes.meDa)
+        + '<button class="cp-copy" data-share-copy-cruce>⧉ COPIAR RESULTADO</button></div>'
+      : '');
+}
+
 // overlay modal: se monta SOLO al abrir (presupuesto iOS: cero capas permanentes)
-function panelHTML(tab: 'progreso' | 'repes', invs: Record<string, InvMap>): string {
+type PanelTab = 'progreso' | 'repes' | 'compartir';
+function panelHTML(tab: PanelTab, invs: Record<string, InvMap>, sh: ShareCtx): string {
   const { got, repes } = globalStats(invs);
   const pct = Math.round((got / ALBUM_TOTAL) * 100);
   let body: string;
@@ -833,7 +898,7 @@ function panelHTML(tab: 'progreso' | 'repes', invs: Record<string, InvMap>): str
           + '<span class="ct-bar"><i style="width:' + Math.round((g / 20) * 100) + '%"></i></span></button>';
       }).join('')
       + '</div>';
-  } else {
+  } else if (tab === 'repes') {
     const groups = repesList(invs);
     body = groups.length === 0
       ? '<div class="cp-empty">Sin repes todavía</div>'
@@ -841,15 +906,18 @@ function panelHTML(tab: 'progreso' | 'repes', invs: Record<string, InvMap>): str
         + '<button class="cp-copy" data-copy-repes>⧉ COPIAR LISTA</button>'
         + groups.map((g) => '<div class="rg-head">' + g.pais + '</div>'
           + g.slots.map((s) => '<div class="rg-row">' + repeRow('<b>' + s.slot + '</b>', s.name, s.repes) + '</div>').join('')).join('');
+  } else {
+    body = shareBodyHTML(sh); // Fv4.4
   }
-  const tabBtn = (t: 'progreso' | 'repes', label: string) =>
+  const tabBtn = (t: PanelTab, label: string) =>
     '<button data-panel-tab="' + t + '"' + (tab === t ? ' class="on"' : '') + '>' + label + '</button>';
   return '<div class="cpanel" id="cpanel">'
     + '<div class="cp-back" data-panel-close></div>'
     + '<div class="cp-card"><div class="cp-head"><div class="cp-trow">'
     + '<div class="cp-title">MI COLECCIÓN</div>'
     + '<button class="cp-x" data-panel-close title="Cerrar">✕</button></div>'
-    + '<div class="cp-tabs">' + tabBtn('progreso', 'PROGRESO') + tabBtn('repes', 'REPES (' + repes + ')') + '</div></div>'
+    + '<div class="cp-tabs">' + tabBtn('progreso', 'PROGRESO') + tabBtn('repes', 'REPES (' + repes + ')')
+    + tabBtn('compartir', 'COMPARTIR') + '</div></div>'
     + '<div class="cp-body">' + body + '</div></div></div>';
 }
 
@@ -943,7 +1011,14 @@ export default function AlbumBook() {
   invsRef.current = invs;
   const [isDesktop, setIsDesktop] = useState(false);
   const [ready, setReady] = useState(false);   // Fv4.0: hidratación del progreso
-  const [panel, setPanel] = useState<'' | 'progreso' | 'repes'>(''); // Fv4.1: Mi colección
+  const [panel, setPanel] = useState<'' | PanelTab>(''); // Fv4.1: Mi colección
+  // Fv4.4: hoja Compartir
+  const [shareFmt, setShareFmt] = useState<ShareFmt>('a26');
+  const [alias, setAlias] = useState(() => {
+    try { return (typeof window !== 'undefined' && localStorage.getItem('album26_alias')) || ''; } catch { return ''; }
+  });
+  const [scanning, setScanning] = useState(false);
+  const [scanRes, setScanRes] = useState<ScanRes | null>(null);
   const [toast, setToast] = useState<{ msg: string; err: boolean } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const avisar = useCallback((msg: string, err = true) => {
@@ -1015,7 +1090,7 @@ export default function AlbumBook() {
       + (isDesktop ? stageHTML(page, invs) : bookHTML(page, invs))
       + statusHTML(page, invs)
       // Fv4.1: el panel se monta SOLO al abrir y se desmonta al cerrar
-      + (panel ? panelHTML(panel, invs) : '');
+      + (panel ? panelHTML(panel, invs, { fmt: shareFmt, alias, scanning, scanRes }) : '');
     // centrar el chip activo (Fv4.2: el scroll vive en .chips-wrap, no en #chips)
     const wrap = el.querySelector('.chips-wrap') as HTMLElement | null;
     const onChip = wrap?.querySelector('.on') as HTMLElement | null;
@@ -1025,7 +1100,102 @@ export default function AlbumBook() {
     }
     // Fv3.4: ajustar wordmark del header L al ancho disponible
     fitHeaders(el);
-  }, [page, invs, isDesktop, ready, panel]);
+  }, [page, invs, isDesktop, ready, panel, shareFmt, alias, scanning, scanRes]);
+
+  // Fv4.4: procesar un QR ajeno leído (autodetección de formato) → cruce local
+  const handleScanned = useCallback(async (data: string) => {
+    try {
+      const share = await import('@/lib/share');
+      const fmtd = share.detectFormat(data);
+      if (!fmtd) { avisar('QR no reconocido (ni Álbum26 ni UsaMexCan).'); return; }
+      let theirs: { faltan: Set<number>; repes: Map<number, number> };
+      let quien = 'Coleccionista';
+      let sinCantidad = false;
+      if (fmtd === 'native') {
+        const d = await share.decodeNative(data);
+        theirs = { faltan: new Set(d.f), repes: new Map(d.r) };
+        quien = d.u || 'Coleccionista';
+      } else {
+        const d = await share.decodeUMC(data);
+        theirs = { faltan: d.faltan, repes: new Map([...d.repes].map((i) => [i, 1])) };
+        quien = 'UsaMexCan';
+        sinCantidad = true;
+      }
+      const cr = share.cruce(share.shareSetsOf(invsRef.current), theirs);
+      setScanRes({
+        alias: quien, sinCantidad, nDoy: cr.leDoy.length, nDa: cr.meDa.length,
+        leDoy: share.lineasCruce(cr.leDoy), meDa: share.lineasCruce(cr.meDa),
+        copyText: share.textCruce(quien, cr, sinCantidad),
+      });
+      setScanning(false);
+    } catch {
+      avisar('No se pudo leer ese QR. Prueba de nuevo con mejor luz o más cerca.');
+      setScanning(false);
+    }
+  }, [avisar]);
+
+  // Fv4.4: generar el QR propio al abrir Compartir (librerías lazy)
+  useEffect(() => {
+    if (panel !== 'compartir' || !ready) return;
+    let dead = false;
+    (async () => {
+      try {
+        const share = await import('@/lib/share');
+        const QR = (await import('qrcode')).default;
+        let payload: string;
+        if (shareFmt === 'umc') {
+          const sets = share.shareSetsOf(invsRef.current);
+          payload = await share.encodeUMC(sets.faltan, new Set(sets.repes.keys()));
+        } else {
+          payload = window.location.origin + '/s#' + (await share.encodeNative(alias, invsRef.current));
+        }
+        (window as unknown as Record<string, unknown>).__lastQR = payload; // QA + depuración
+        const cv = document.getElementById('share-qr') as HTMLCanvasElement | null;
+        // EC: 'H' en UMC (su spec: llevan logo central) · 'M' en nativo (v40-H solo
+        // admite 1273 bytes y una colección a medias los excede; M llega a 2331).
+        // margin 4 = quiet zone estándar (con menos, los lectores reales fallan).
+        // width 780 con CSS a 260px: nítido en @2x/@3x y decodificable desde PNG.
+        if (cv && !dead) await QR.toCanvas(cv, payload, { errorCorrectionLevel: shareFmt === 'umc' ? 'H' : 'M', margin: 4, width: 780 });
+      } catch { if (!dead) avisar('No se pudo generar el QR.'); }
+    })();
+    return () => { dead = true; };
+    // scanning/scanRes: su cambio reconstruye el panel (innerHTML) y recrea el
+    // canvas vacío — sin ellos aquí, el QR se quedaba en blanco tras un escaneo
+  }, [panel, shareFmt, alias, invs, ready, scanning, scanRes, avisar]);
+
+  // Fv4.4: escáner de cámara (getUserMedia + jsQR), solo mientras scanning
+  useEffect(() => {
+    if (!scanning || panel !== 'compartir') return;
+    let stop = false; let stream: MediaStream | null = null; let raf = 0;
+    (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        const video = document.getElementById('share-video') as HTMLVideoElement | null;
+        if (!video || stop) { stream?.getTracks().forEach((t) => t.stop()); return; }
+        video.srcObject = stream;
+        await video.play();
+        const jsQR = (await import('jsqr')).default;
+        const cv = document.createElement('canvas');
+        const cx = cv.getContext('2d', { willReadFrequently: true })!;
+        const tick = () => {
+          if (stop) return;
+          if (video.videoWidth) {
+            cv.width = video.videoWidth; cv.height = video.videoHeight;
+            cx.drawImage(video, 0, 0);
+            const img = cx.getImageData(0, 0, cv.width, cv.height);
+            const hit = jsQR(img.data, img.width, img.height);
+            if (hit && hit.data) { handleScanned(hit.data); return; }
+          }
+          raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+      } catch {
+        avisar('No se pudo abrir la cámara. Usa "Subir imagen QR".');
+        setScanning(false);
+      }
+    })();
+    return () => { stop = true; cancelAnimationFrame(raf); stream?.getTracks().forEach((t) => t.stop()); };
+  }, [scanning, panel, handleScanned, avisar]);
 
   // delegación de eventos + swipe (móvil: hojas · desktop: vistas + teclado + drag)
   useEffect(() => {
@@ -1065,7 +1235,7 @@ export default function AlbumBook() {
       const pbtn = target.closest('[data-panel]') as HTMLElement | null;
       if (pbtn) { setPanel(pbtn.dataset.panel as 'progreso' | 'repes'); return; }
       const pclose = target.closest('[data-panel-close]') as HTMLElement | null;
-      if (pclose) { setPanel(''); return; }
+      if (pclose) { setPanel(''); setScanning(false); return; }
       const gteam = target.closest('[data-goteam]') as HTMLElement | null;
       if (gteam) {
         setPanel('');
@@ -1074,6 +1244,44 @@ export default function AlbumBook() {
       }
       const gspecial = target.closest('[data-gospecial]') as HTMLElement | null;
       if (gspecial) { setPanel(''); nav(FIRST_APERTURA); return; } // Fv4.2: fila ESPECIALES
+      // Fv4.4: hoja Compartir
+      const sfmt = target.closest('[data-share-fmt]') as HTMLElement | null;
+      if (sfmt) { setShareFmt(sfmt.dataset.shareFmt as ShareFmt); return; }
+      const sscan = target.closest('[data-share-scan]') as HTMLElement | null;
+      if (sscan) { setScanning(true); return; }
+      const sstop = target.closest('[data-share-scan-stop]') as HTMLElement | null;
+      if (sstop) { setScanning(false); return; }
+      const stext = target.closest('[data-share-text]') as HTMLElement | null;
+      if (stext) {
+        const kind = stext.dataset.shareText as 'faltan' | 'repes';
+        (async () => {
+          const share = await import('@/lib/share');
+          const text = kind === 'faltan' ? share.textFaltan(invsRef.current) : share.textRepes(invsRef.current);
+          try {
+            if (navigator.share) { await navigator.share({ text }); return; }
+            throw new Error('sin Web Share');
+          } catch {
+            navigator.clipboard?.writeText(text)
+              .then(() => avisar('Texto copiado al portapapeles ✓', false))
+              .catch(() => avisar('No se pudo compartir ni copiar.'));
+          }
+        })();
+        return;
+      }
+      const scruce = target.closest('[data-share-copy-cruce]') as HTMLElement | null;
+      if (scruce && scanRes) {
+        (async () => {
+          try {
+            if (navigator.share) { await navigator.share({ text: scanRes.copyText }); return; }
+            throw new Error('sin Web Share');
+          } catch {
+            navigator.clipboard?.writeText(scanRes.copyText)
+              .then(() => avisar('Resultado copiado ✓', false))
+              .catch(() => avisar('No se pudo copiar el resultado.'));
+          }
+        })();
+        return;
+      }
       const copyBtn = target.closest('[data-copy-repes]') as HTMLElement | null;
       if (copyBtn) {
         navigator.clipboard?.writeText(repesText(invs))
@@ -1124,7 +1332,7 @@ export default function AlbumBook() {
     };
     // desktop: teclado + drag (pointer) por vistas, solo sobre el stage
     const onKey = (ev: KeyboardEvent) => {
-      if (panel) { if (ev.key === 'Escape') setPanel(''); return; } // Fv4.1
+      if (panel) { if (ev.key === 'Escape') { setPanel(''); setScanning(false); } return; } // Fv4.1
       if (ev.key === 'ArrowRight') step(1);
       else if (ev.key === 'ArrowLeft') step(-1);
     };
@@ -1142,7 +1350,37 @@ export default function AlbumBook() {
         step(dx < 0 ? 1 : -1);
       }
     };
+    // Fv4.4: cambios de alias y subida de imagen QR (delegación de 'change')
+    const onChange = (ev: Event) => {
+      const t = ev.target as HTMLInputElement;
+      if (t.id === 'share-alias') {
+        const v = t.value.trim().slice(0, 24);
+        try { localStorage.setItem('album26_alias', v); } catch {}
+        setAlias(v);
+      } else if (t.id === 'share-file' && t.files && t.files[0]) {
+        const file = t.files[0];
+        t.value = '';
+        (async () => {
+          try {
+            const bmp = await createImageBitmap(file);
+            const scale = Math.min(1, 1200 / Math.max(bmp.width, bmp.height));
+            const w = Math.max(1, Math.round(bmp.width * scale));
+            const h = Math.max(1, Math.round(bmp.height * scale));
+            const cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            const cx = cv.getContext('2d', { willReadFrequently: true })!;
+            cx.drawImage(bmp, 0, 0, w, h);
+            const img = cx.getImageData(0, 0, w, h);
+            const jsQR = (await import('jsqr')).default;
+            const hit = jsQR(img.data, w, h);
+            if (hit && hit.data) handleScanned(hit.data);
+            else avisar('No se ha encontrado ningún QR en la imagen.');
+          } catch { avisar('No se pudo leer la imagen.'); }
+        })();
+      }
+    };
     el.addEventListener('click', onClick);
+    el.addEventListener('change', onChange);
     if (isDesktop) {
       window.addEventListener('keydown', onKey);
       el.addEventListener('pointerdown', onPointerDown);
@@ -1153,13 +1391,14 @@ export default function AlbumBook() {
     }
     return () => {
       el.removeEventListener('click', onClick);
+      el.removeEventListener('change', onChange);
       window.removeEventListener('keydown', onKey);
       el.removeEventListener('pointerdown', onPointerDown);
       el.removeEventListener('pointerup', onPointerUp);
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [page, invs, apply, isDesktop, panel, avisar]);
+  }, [page, invs, apply, isDesktop, panel, avisar, scanRes, handleScanned]);
 
   return (
     <>

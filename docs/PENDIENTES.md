@@ -87,6 +87,19 @@ ni Android SDK): el repo queda listo para `npx cap sync` + build local.
 - Si TWA Android: SHA-256 del certificado de firma para el `assetlinks.json`
   (ese fichero sí lo añado yo al repo cuando llegue).
 
+## Fv4.4 — Compartir colección: ✅ HECHO, pendiente gate E2E físico (San)
+- **GATE FÍSICO post-deploy**: escanear nuestro QR **USAMEXCAN** con la app
+  "Usa Mex Can 26" real (y si se puede, a la inversa: escanear el suyo con
+  nuestro "Escanear QR" o "Subir imagen QR"). El QR interop queda a 2 taps:
+  MI COLECCIÓN → COMPARTIR → toggle USAMEXCAN. Criterio: su app lee nuestro
+  payload (prefijo e7ab99e69591, bitmaps LSB-first, EC H para su logo central).
+- Sus repes se importan **como x1** (su formato no lleva cantidades; la UI del
+  cruce lo indica). Nota reportada en fv44-status: la `verificacion_ejemplo` de
+  la spec no casa con los bytes de su propio payload de ejemplo (detalle en
+  docs/DECISIONES.md § Fv4.4); si el gate físico fallara, mirar primero ahí.
+- El QR nativo comparte un ENLACE (`{origin}/s#v1.…`): cualquier cámara de móvil
+  lo abre en `/s` sin cuenta (el payload va en el fragment, no toca el servidor).
+
 ## F4 — PWA: ✅ instalable desde Fv3.6
 - Manifest completo (name/short_name/display standalone/colores `#1E1B33`), iconos
   192/512 servidos desde el bucket (`flags/icons/…`, URLs absolutas, subidos por San),

@@ -176,6 +176,43 @@ Formato: **Síntoma → Causa raíz → Fix → Guardarraíl**.
 - **Síntoma**: `TypeError: URL is not a constructor` en suites ESM.
 - **Fix**: `new globalThis.URL(...)` (o no llamar URL a la variable).
 
+## Compartir / Fv4.4
+
+### El QR se quedaba en blanco tras mostrarse el cruce
+- **Síntoma**: al leer un QR ajeno (o abrir/cerrar el escáner), el QR propio de la
+  hoja COMPARTIR desaparecía (canvas vacío). Lo destapó la CAPTURA del gate, no
+  los checks: los asserts miraban el cruce, nadie miraba el canvas.
+- **Causa**: patrón motor-UI — `scanRes/scanning` reconstruyen el innerHTML del
+  panel y el `<canvas>` renace vacío, pero el efecto que pinta el QR no los tenía
+  en sus deps y no se relanzaba.
+- **Fix**: `scanning, scanRes` añadidos a las deps del efecto del QR.
+- **Guardarraíl**: check en fv44 "el QR sigue pintado tras el cruce" (px oscuros
+  del canvas tras subir imagen). Regla general: un efecto que pinta DENTRO del
+  HTML reconstruido debe depender de TODO estado que dispare ese rebuild.
+
+### QR ilegible: quiet zone y densidad
+- **Síntoma**: jsQR no decodificaba el PNG del QR propio (e2e de "Subir imagen").
+- **Causas** (dos): `margin: 1` — la spec QR exige 4 módulos de quiet zone y con
+  1 fallan jsQR y lectores reales; y payload nativo con f=991 índices → QR
+  versión ~40 (177 módulos), ilegible a cualquier resolución razonable.
+- **Fix**: `margin: 4` + canvas interno 780px (mostrado a 260 CSS) + formato v1
+  con **complemento**: se emite `f` (faltantes) o `g` (tengo), la lista más
+  corta — el QR queda pequeño en ambos extremos del progreso. EC 'M' en nativo
+  (v40-H tope 1273 bytes; M 2331) y 'H' solo en UsaMexCan (su spec, logo central).
+- **Guardarraíl**: el e2e de fv44 decodifica el PNG real del canvas (contexto B).
+
+### La nota de verificación de la spec interop no casa con sus propios bytes
+- **Síntoma**: el check literal del brief ("902 faltantes… sin 00/MEX/RSA") falló
+  contra el payload de ejemplo REAL de la spec.
+- **Causa**: los bytes del bloque 1 son `ff×12…` (posiciones 0..95 = faltantes,
+  anclas incluidas) y los 902 bits solo salen contando el padding 992..999
+  (byte 124 = 0x03). La nota describe otra colección; el FORMATO es coherente.
+- **Fix**: decode sobre el universo real 0..991 (900 útiles + 22 repes); el QA
+  verifica ambas cifras contra bytes y fija LSB-first con las 22 posiciones de
+  repes como snapshot. Reportado en fv44-status; árbitro final: gate físico.
+- **Lección**: ante un dato que no cuadra, decodificar el ejemplo REAL a mano
+  (node + zlib) antes de tocar código — la aritmética de bits no admite opinión.
+
 ## QA / entorno
 
 - **El sandbox no llega a supabase.co** (política de red): los payloads van por MCP

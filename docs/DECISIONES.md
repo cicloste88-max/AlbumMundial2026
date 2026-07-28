@@ -375,6 +375,65 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
 - **QA**: `qa/verify-fv42-especiales.mjs` (21 checks). Regresión completa:
   21 + 57+24+18+15+24+14+24+13+19+22 = 251/251.
 
+## Cierre Fv4.2 (verificación del censo por San, 2026-07)
+
+- Censo DEFINITIVO confirmado: 00 + FWC-1..19 + CC-1..12 = 32 slots / 992 total.
+  La distribución de históricos FWC-9..19 **tal como está construida ES la
+  definitiva** (el reparto alternativo 4+6+6+6 queda descartado; NO habrá v3).
+  CC=12 verificado. El título del commit de Fv4.2 dice "(25 slots)" por herencia
+  del brief v1: se queda TAL CUAL (no se reescribe historial).
+
+## Fv4.4 — Compartir colección: QR nativo + interop UsaMexCan + share WhatsApp
+
+- **Alcance**: tercera pestaña COMPARTIR en el panel Mi colección; sin backend
+  nuevo, sin migraciones, adición pura sobre el panel de Fv4.1/4.2.
+- **Formato nativo**: `{origin}/s#v1.<base64url(deflate-raw(JSON))>` sobre el
+  orden canónico CANON de 992 posiciones (`lib/share.ts`). El JSON lleva
+  `{u alias, t epoch, r [[idx,cant]]}` y **la lista más corta de las dos**:
+  `f` (faltantes) o `g` (complemento "tengo") — un recién llegado con f=991
+  generaba un QR versión ~40 ilegible para cualquier lector; con `g` el QR es
+  pequeño en ambos extremos del progreso. `decodeNative` materializa `f` siempre.
+  El payload viaja en el FRAGMENT: jamás llega al servidor (privacidad); la ruta
+  `/s` es pública en `proxy.ts` y computa el cruce en cliente si hay sesión.
+- **Interop "Usa Mex Can 26"** (spec `build_handoff k='qr-interop-spec'`, md5
+  f433860d verificado server+local): prefijo bytes `e7ab99e69591` +
+  `b64(gzip(bitmap faltantes))` + `;` + `b64(gzip(bitmap repes))`; bitmaps de
+  125 bytes/1000 bits **LSB-first**, bloque1 con semántica invertida (1=ME
+  FALTA), bloque2 sin cantidades (al importar se asume x1 y la UI lo indica).
+  Anclas verificadas: 00→0, MEX-1→20, MEX-14→33, MEX-20→39, RSA-4→43.
+- **Discrepancia documentada de la spec** (reportada en fv44-status, no
+  bloqueante): su nota `verificacion_ejemplo` dice "902 faltantes… sin 00/MEX/
+  RSA", pero los BYTES del propio payload de ejemplo son `ff×12…` (posiciones
+  0..95 faltantes, anclas incluidas) y los 902 bits solo salen contando el
+  padding 992..999 (byte 124=0x03 → bits en 992,993). Nuestro decode lee el
+  universo real 0..991 → 900 faltantes + 22 repes. El QA verifica AMBAS cifras
+  contra los bytes y fija el bit-order con las 22 posiciones de repes como
+  snapshot. El formato en sí es coherente; el árbitro final es el gate físico.
+- **QR render**: librerías `qrcode` + `jsqr` SOLO lazy (dynamic import al abrir
+  la hoja; presupuesto iOS intacto, medido con la hoja abierta). Error
+  correction **H en UMC** (su spec: llevan logo central) y **M en nativo**
+  (v40-H tope 1273 bytes — una colección a medias lo excede; M llega a 2331).
+  `margin: 4` (quiet zone estándar; con 1 los lectores reales fallan) y canvas
+  interno 780px mostrado a 260 CSS (nítido @2x/@3x y decodificable desde PNG).
+  El QR se repinta tras el re-render del cruce (scanning/scanRes en las deps
+  del efecto — el rebuild por innerHTML recrea el canvas vacío).
+- **Escaneo**: cámara con `getUserMedia` facingMode environment + jsQR en rAF
+  (canvas willReadFrequently), y "Subir imagen QR" (`createImageBitmap` escalado
+  ≤1200px + jsQR) como alternativa sin cámara. Autodetección nativo/UMC por
+  prefijo/esquema. Cruce local "LE PUEDES DAR / TE PUEDE DAR" con listas por
+  equipo (formateador compartido con los textos) + COPIAR RESULTADO.
+- **Textos share** (Web Share API; fallback clipboard+toast): FALTAN/REPES con
+  cabecera `Me faltan N · Álbum K/992 (P%)` y línea por equipo
+  `MEX: 2, 5 (x2)`; ESPECIALES en una línea con códigos completos. Formato
+  ESTABLE con snapshot byte-exacto en QA.
+- **QA**: `qa/verify-fv44-share.mjs` (24 checks, `npm run qa:share`) — el e2e de
+  lectura es genuino: el PNG del QR del contexto A se sube en el contexto B con
+  `setInputFiles` → decode → cruce exacto en ambas direcciones. Capturas
+  `qa/screenshots/fv44/` (shot-fv44.mjs). Regresión completa:
+  24 + 251 = 275/275. Gate E2E físico pendiente (San, post-deploy): escanear
+  nuestro QR USAMEXCAN con la app real (queda a 2 taps: MI COLECCIÓN →
+  COMPARTIR → toggle USAMEXCAN).
+
 ## Mantenimiento — memoria de proyecto y QA versionada
 
 - `CLAUDE.md` (raíz), `docs/` (BUILD-PLAN verbatim, este log, PENDIENTES) y

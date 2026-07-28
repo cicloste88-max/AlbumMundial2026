@@ -32,9 +32,11 @@ errores y guardarraíles en `docs/ERRORES.md`.
 album26/                  la app (Root Directory en Vercel)
 ├── app/                  layout (fuentes next/font, PWA meta, registro SW en prod),
 │                         globals.css (F0), page.tsx → <AlbumBook/>,
-│                         login/ (Fv4.0: Entrar/Registrarse) · auth/ (confirm+callback)
+│                         login/ (Fv4.0: Entrar/Registrarse) · auth/ (confirm+callback) ·
+│                         s/ (Fv4.4: vista pública de colección compartida; payload en
+│                         el fragment #v1.…, nunca viaja al servidor)
 ├── proxy.ts              Fv4.0: sesión @supabase/ssr (Next 16 renombró middleware→proxy);
-│                         protege todo excepto /login, /auth/*, manifest, sw.js, estáticos
+│                         protege todo excepto /login, /auth/*, /s, manifest, sw.js, estáticos
 ├── components/
 │   ├── AlbumBook.tsx     ACTIVO: libro 48 selecciones, visual de referencia v3,
 │   │                     spread 2 páginas en desktop (≥900px), móvil una hoja
@@ -44,6 +46,9 @@ album26/                  la app (Root Directory en Vercel)
 │   ├── album-especiales.ts GENERADO desde k=album-especiales v2 (Fv4.2: 00/FWC/CC, 32 slots)
 │   ├── inventory.ts      persistencia conmutable: CloudStore (album_progress, Fv4.0)
 │   │                     con LocalStore de fallback sin configuración
+│   ├── share.ts          Fv4.4: CANON 992 · formato nativo v1 (f o g complemento) ·
+│   │                     interop UsaMexCan (spec k=qr-interop-spec) · cruce · textos
+│   │                     share con FORMATO ESTABLE (snapshot en QA) — carga LAZY
 │   ├── supabase/         client.ts (browser singleton) · server.ts (route handlers)
 │   └── teams.ts          LEGACY (datos F0 Grupo A)
 ├── public/fonts/fwc26.otf · manifest.webmanifest · sw.js (PWA; /login y /auth/*
@@ -81,7 +86,15 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
   (`npm run qa:ios`, presupuesto ≤60 capas/≤60MB vía CDP).
 - **Motor UI**: builders que devuelven HTML string + delegación de eventos + rebuild de
   innerHTML por estado (patrón heredado del diseño de San). No migrar a JSX granular sin
-  paquete que lo pida.
+  paquete que lo pida. OJO: un efecto que pinta sobre un nodo del panel (p. ej. el canvas
+  del QR) debe depender de TODOS los estados que reconstruyen ese innerHTML — el rebuild
+  recrea el nodo vacío (bug del QR en blanco tras el cruce, corregido en Fv4.4).
+- **Compartir (Fv4.4, contratos estables)**: los textos FALTAN/REPES/cruce tienen
+  snapshot byte-exacto en QA — cambiarlos es romper QA a sabiendas. El QR nativo emite
+  `f` o `g` (complemento, la lista más corta: con f=991 el QR v40 es ilegible); EC 'M'
+  nativo / 'H' UMC (su spec), margin 4, canvas 780→260 CSS. Interop UsaMexCan: bitmaps
+  125B LSB-first, bloque1 invertido (1=ME FALTA), repes ajenas sin cantidad → x1.
+  La `verificacion_ejemplo` de su spec no casa con sus propios bytes (DECISIONES § Fv4.4).
 - **Banderas**: PNG por código FIFA en Supabase Storage (bucket público `flags/`),
   fallback `flagErr` → span `.noflag`. El sandbox de Claude Code NO llega a supabase.co
   (política de red): usar el MCP de Supabase para datos y no esperar ver banderas en
@@ -123,5 +136,6 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
 | **v1.0.0 PRODUCCIÓN** — gate humano OK (desktop + Safari/iOS) | ✅ | `e3c1705` |
 | Fv4.0 auth registro abierto + progreso en nube (RLS) | ✅ (validada e2e en prod) | ver `git log` |
 | Fv4.1 panel "Mi colección" (progreso global + repes con copia) | ✅ | ver `git log` |
-| Fv4.2 secciones especiales 00/FWC/CC (+32 slots, 992 total) | ✅ | ver `git log` |
+| Fv4.2 secciones especiales 00/FWC/CC (+32 slots, 992 total) — censo DEFINITIVO (cierre por San: FWC-9..19 como está, CC=12, sin v3) | ✅ | ver `git log` |
+| Fv4.4 compartir colección (QR nativo + interop UsaMexCan + share texto) — gate E2E físico pendiente (San) | ✅ | ver `git log` |
 | Fv5.0 empaquetado nativo (renumerado) · req #2 imágenes | ⏸ pendientes | — |

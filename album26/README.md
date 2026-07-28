@@ -24,6 +24,7 @@ npm run qa:ios     # fv38 · presupuesto iOS + safe-areas nativas (13)
 npm run qa:auth    # fv40 · auth + progreso en nube con mocks (19)
 npm run qa:collection # fv41 · panel Mi colección (22)
 npm run qa:especiales # fv42 · secciones especiales 00/FWC/CC (21)
+npm run qa:share   # fv44 · compartir: QR nativo + interop UsaMexCan + cruce (24)
 ```
 
 Las suites necesitan la app corriendo con `QA_AUTH_MOCK=1` (`QA_URL`, default
@@ -40,8 +41,12 @@ app/
 ├── globals.css       reset F0 + @font-face FWC26
 ├── page.tsx          → <AlbumBook/>
 ├── login/page.tsx    Fv4.0: Entrar/Registrarse (email+password, registro abierto)
-└── auth/             confirm (token_hash) y callback (code) del email de Supabase
+├── auth/             confirm (token_hash) y callback (code) del email de Supabase
+└── s/page.tsx        Fv4.4: vista pública de una colección compartida — decodifica el
+                      fragment #v1.… en cliente (jamás llega al servidor) y, con
+                      sesión, computa el cruce local
 proxy.ts              Fv4.0: sesión @supabase/ssr (convenio Next 16); sin sesión → /login
+                      (públicas: /login, /auth/*, /s, manifest, sw.js, estáticos)
 components/
 ├── AlbumBook.tsx     TODO el motor: datos→HTML (builders string), CSS del libro
 │                     (template literal), navegación, estados, swipe, fitHeaders
@@ -51,6 +56,9 @@ lib/
 │                     — NO editar a mano; se regenera por script en cada fase de datos
 ├── inventory.ts      InventoryStore (loadAll/loadCountry/put/clear) · CloudStore
 │                     (album_progress, Fv4.0) · LocalStore de fallback
+├── share.ts          Fv4.4 (carga LAZY): CANON 992 · QR nativo v1 (f o g complemento)
+│                     · interop UsaMexCan (bitmaps 125B LSB-first, prefijo e7ab99e69591)
+│                     · cruce · textos share con formato ESTABLE (snapshot en QA)
 ├── supabase/         client.ts (browser singleton) · server.ts (route handlers)
 └── teams.ts          LEGACY F0
 public/
@@ -59,7 +67,8 @@ public/
 └── sw.js             SW mínimo: cache-first /_next/static, network-first documento,
                       guardas Safari (sin redirects cacheados, fallback offline)
 qa/                   suites Playwright + screenshots de gate (qa/README.md)
-supabase/schema.sql   F1 (tabla inventory + RLS) — AÚN SIN APLICAR
+supabase/             migrations/0001_album_progress.sql (DDL de referencia, YA aplicada
+                      por el orquestador — NO re-aplicar) · schema.sql (histórico F1)
 ```
 
 ## Reglas que no se pueden romper (resumen; detalle en ../CLAUDE.md)
@@ -75,3 +84,6 @@ supabase/schema.sql   F1 (tabla inventory + RLS) — AÚN SIN APLICAR
   `put(k, null)` (race conocido, documentado en ../docs/ERRORES.md).
 - **Motor UI**: builders HTML-string + delegación de eventos + rebuild de innerHTML.
   No migrar a JSX granular sin paquete que lo pida.
+- **Compartir (Fv4.4)**: los textos FALTAN/REPES/cruce tienen snapshot byte-exacto en
+  QA (formato estable); el QR usa EC M nativo / H UsaMexCan, margin 4, canvas 780.
+  Las librerías qrcode/jsqr SOLO se cargan lazy (presupuesto iOS).

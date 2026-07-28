@@ -9,7 +9,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = /^\/(login|auth\/|manifest\.webmanifest|sw\.js|favicon\.ico|fonts\/|icons\/)/;
+// Fv4.4: /s es la vista pública de colección compartida (el payload va en el
+// fragment y nunca llega al servidor; debe abrir sin cuenta)
+const PUBLIC_PATHS = /^\/(login|auth\/|s(?:\/|$)|manifest\.webmanifest|sw\.js|favicon\.ico|fonts\/|icons\/)/;
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
