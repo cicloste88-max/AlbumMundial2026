@@ -1163,38 +1163,48 @@ export default function AlbumBook() {
     // canvas vacío — sin ellos aquí, el QR se quedaba en blanco tras un escaneo
   }, [panel, shareFmt, alias, invs, ready, scanning, scanRes, avisar]);
 
-  // Fv4.4: escáner de cámara (getUserMedia + jsQR), solo mientras scanning
+  // Fv4.4: escáner de cámara, solo mientras scanning. Fv4.4.2: pide 1080p (a
+  // 640×480 un QR denso no tiene píxeles suficientes) y usa BarcodeDetector
+  // nativo directamente sobre el vídeo cuando existe; jsQR de fallback.
   useEffect(() => {
     if (!scanning || panel !== 'compartir') return;
-    let stop = false; let stream: MediaStream | null = null; let raf = 0;
+    let stop = false; let stream: MediaStream | null = null; let timer = 0;
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        });
         const video = document.getElementById('share-video') as HTMLVideoElement | null;
         if (!video || stop) { stream?.getTracks().forEach((t) => t.stop()); return; }
         video.srcObject = stream;
         await video.play();
-        const jsQR = (await import('jsqr')).default;
+        const det = (await import('@/lib/share')).nativeDetector();
+        const jsQR = det ? null : (await import('jsqr')).default;
         const cv = document.createElement('canvas');
         const cx = cv.getContext('2d', { willReadFrequently: true })!;
-        const tick = () => {
+        const tick = async () => {
           if (stop) return;
           if (video.videoWidth) {
-            cv.width = video.videoWidth; cv.height = video.videoHeight;
-            cx.drawImage(video, 0, 0);
-            const img = cx.getImageData(0, 0, cv.width, cv.height);
-            const hit = jsQR(img.data, img.width, img.height);
-            if (hit && hit.data) { handleScanned(hit.data); return; }
+            let data: string | null = null;
+            if (det) {
+              try { data = (await det.detect(video))?.[0]?.rawValue || null; } catch { /* frame no listo */ }
+            } else {
+              cv.width = video.videoWidth; cv.height = video.videoHeight;
+              cx.drawImage(video, 0, 0);
+              const img = cx.getImageData(0, 0, cv.width, cv.height);
+              data = jsQR!(img.data, img.width, img.height)?.data || null;
+            }
+            if (data && !stop) { handleScanned(data); return; }
           }
-          raf = requestAnimationFrame(tick);
+          timer = window.setTimeout(tick, det ? 160 : 60);
         };
-        raf = requestAnimationFrame(tick);
+        timer = window.setTimeout(tick, 60);
       } catch {
         avisar('No se pudo abrir la cámara. Usa "Subir imagen QR".');
         setScanning(false);
       }
     })();
-    return () => { stop = true; cancelAnimationFrame(raf); stream?.getTracks().forEach((t) => t.stop()); };
+    return () => { stop = true; clearTimeout(timer); stream?.getTracks().forEach((t) => t.stop()); };
   }, [scanning, panel, handleScanned, avisar]);
 
   // delegación de eventos + swipe (móvil: hojas · desktop: vistas + teclado + drag)
@@ -1362,18 +1372,11 @@ export default function AlbumBook() {
         t.value = '';
         (async () => {
           try {
+            // Fv4.4.2: multi-escala — el downscale único a 1200 dejaba ilegible
+            // el QR de un screenshot vertical (caso real: captura de Figuritas)
             const bmp = await createImageBitmap(file);
-            const scale = Math.min(1, 1200 / Math.max(bmp.width, bmp.height));
-            const w = Math.max(1, Math.round(bmp.width * scale));
-            const h = Math.max(1, Math.round(bmp.height * scale));
-            const cv = document.createElement('canvas');
-            cv.width = w; cv.height = h;
-            const cx = cv.getContext('2d', { willReadFrequently: true })!;
-            cx.drawImage(bmp, 0, 0, w, h);
-            const img = cx.getImageData(0, 0, w, h);
-            const jsQR = (await import('jsqr')).default;
-            const hit = jsQR(img.data, w, h);
-            if (hit && hit.data) handleScanned(hit.data);
+            const hit = await (await import('@/lib/share')).readQRMultiScale(bmp);
+            if (hit) handleScanned(hit);
             else avisar('No se ha encontrado ningún QR en la imagen.');
           } catch { avisar('No se pudo leer la imagen.'); }
         })();

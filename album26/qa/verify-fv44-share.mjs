@@ -15,8 +15,16 @@
 //       (e2e real: QR propio capturado como PNG y subido en otro contexto)
 //   (5) textos share: snapshot byte-exacto; navigator.share mockeado
 //   (6) /s pública sin sesión; lazy-load; presupuesto iOS con la hoja abierta
+//   (7) Fv4.4.2, caso real del gate: screenshot VERTICAL 1080×2340 de la app
+//       Figuritas (QR con logo central, recodificado JPEG) subido por
+//       "Subir imagen QR" → cruce con repes ajenas a x1. El downscale único a
+//       1200 dejaba este caso ilegible; el lector ahora es multi-escala y usa
+//       BarcodeDetector nativo cuando existe (aquí no: valida el fallback jsQR)
+//   (8) robustez del lector: QR denso (~v30) + logo + JPEG en screenshot
+//       vertical → readQRMultiScale lo lee (con una sola escala fallaba)
 // Uso:  QA_URL=http://localhost:3000 node qa/verify-fv44-share.mjs
 import { chromium } from 'playwright-core';
+import QRCode from 'qrcode'; // dependencia de la app: genera el fixture denso (7b)
 import { mockAuth } from './_mock-auth.mjs';
 const EXE = process.env.QA_CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const URL = process.env.QA_URL || 'http://localhost:3000/';
@@ -37,6 +45,7 @@ const openShare = async (p) => {
 
 // ============ contexto A: funciones puras + QR propio + textos ============
 let qrPngA = null; // PNG del QR nativo del estado A (para el e2e de subida en B)
+let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
 {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, serviceWorkers: 'block' });
   // estado A: tiene MEX-2 (repe x2); todo lo demás le falta
@@ -170,6 +179,7 @@ let qrPngA = null; // PNG del QR nativo del estado A (para el e2e de subida en B
   }));
   ok('nombre visible: toggle ÁLBUM26|FIGURITAS y caption "app Figuritas"',
     vis.btns === 'ÁLBUM26|FIGURITAS' && vis.cap.includes('"Figuritas"'), JSON.stringify(vis));
+  qrUmcA = Buffer.from((await p.evaluate(() => document.getElementById('share-qr').toDataURL('image/png'))).split(',')[1], 'base64');
 
   // volver a nativo y capturar el PNG del QR para el e2e de subida (contexto B)
   await p.evaluate(() => { [...document.querySelectorAll('[data-share-fmt]')].find(x => x.dataset.shareFmt === 'a26')?.click(); });
@@ -230,6 +240,49 @@ let qrPngA = null; // PNG del QR nativo del estado A (para el e2e de subida en B
   const crTxt = await p.evaluate(() => (window.__shared || [])[0]?.text || '');
   ok('(4) COPIAR RESULTADO: texto de cruce con ambas secciones',
     crTxt.includes('LE PUEDES DAR (1):') && crTxt.includes('MEX: 5') && crTxt.includes('TE PUEDE DAR (1):') && crTxt.includes('MEX: 2 (x2)'), JSON.stringify(crTxt));
+
+  // (7) caso real del gate: screenshot vertical de Figuritas — el QR UMC de A
+  // a 570px dentro de un lienzo 1080×2340 con logo central, recodificado JPEG
+  const shotUrl = await p.evaluate(async (qrUrl) => {
+    const img = new Image(); img.src = qrUrl; await img.decode();
+    const shot = document.createElement('canvas'); shot.width = 1080; shot.height = 2340;
+    const c = shot.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 1080, 2340);
+    c.fillStyle = '#111'; c.font = 'bold 52px sans-serif'; c.fillText('Usa Méx Can 26', 60, 160);
+    c.drawImage(img, 255, 300, 570, 570);
+    const L = 60; c.fillStyle = '#1a1a1a'; c.fillRect(540 - L / 2, 585 - L / 2, L, L);
+    c.fillStyle = '#e8632c'; c.fillRect(540 - L / 2 + 10, 585 - L / 2 + 10, L - 20, L - 20);
+    c.fillStyle = '#2b62d9'; c.font = '40px sans-serif'; c.fillText('Escanea el código QR de tus amigos', 60, 1100);
+    return shot.toDataURL('image/jpeg', 0.85);
+  }, 'data:image/png;base64,' + qrUmcA.toString('base64'));
+  await p.setInputFiles('#share-file', { name: 'captura.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(shotUrl.split(',')[1], 'base64') });
+  await p.waitForTimeout(1600);
+  const cru2 = await p.evaluate(() => {
+    const box = document.getElementById('sh-cruce');
+    if (!box) return { toast: document.getElementById('ab-toast')?.textContent || '(sin toast)' };
+    return { head: box.querySelector('.sh-crh')?.textContent || '', rows: [...box.querySelectorAll('.rg-row')].map(x => x.textContent) };
+  });
+  ok('(7) screenshot Figuritas (vertical 1080×2340, QR con logo, JPEG): leído y cruzado',
+    !!cru2.rows && cru2.head.includes('Figuritas') && cru2.head.includes('sin cantidad'), JSON.stringify(cru2));
+  ok('(7) repes de Figuritas sin cantidad → x1: TE PUEDE DAR muestra MEX: 2 (sin x2)',
+    !!cru2.rows && cru2.rows[0] === 'MEX: 5' && cru2.rows[1] === 'MEX: 2', JSON.stringify(cru2.rows || cru2));
+
+  // (8) robustez del lector: QR denso ~v30 (fallaba con el downscale único)
+  let denso = 'FIG-DENSO-'; while (denso.length < 640) denso += 'Qx9zK4mP2wL8vR5tB1nJ7cD3hF6gS0aE';
+  const qrDensoURL = await QRCode.toDataURL(denso, { errorCorrectionLevel: 'H', margin: 4, width: 1140 });
+  const lect = await p.evaluate(async ({ qr, esperado }) => {
+    const img = new Image(); img.src = qr; await img.decode();
+    const shot = document.createElement('canvas'); shot.width = 1080; shot.height = 2340;
+    const c = shot.getContext('2d');
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 1080, 2340);
+    c.drawImage(img, 255, 300, 570, 570);
+    const L = 60; c.fillStyle = '#1a1a1a'; c.fillRect(540 - L / 2, 585 - L / 2, L, L);
+    const jpg = new Image(); jpg.src = shot.toDataURL('image/jpeg', 0.85); await jpg.decode();
+    const bmp = await createImageBitmap(jpg);
+    const hit = await window.__share.readQRMultiScale(bmp);
+    return hit === esperado;
+  }, { qr: qrDensoURL, esperado: denso });
+  ok('(8) lector multi-escala: QR denso (~v30) + logo + JPEG en screenshot vertical', lect === true);
   await ctx.close();
 }
 

@@ -201,6 +201,23 @@ Formato: **Síntoma → Causa raíz → Fix → Guardarraíl**.
   (v40-H tope 1273 bytes; M 2331) y 'H' solo en Figuritas (su spec, logo central).
 - **Guardarraíl**: el e2e de fv44 decodifica el PNG real del canvas (contexto B).
 
+### El lector no leía el QR real de la app Figuritas (gate físico, reporte de San)
+- **Síntoma**: "Subir imagen QR" con un screenshot del QR de Figuritas decía
+  "No se ha encontrado ningún QR en la imagen"; la cámara tampoco lo detectaba.
+- **Causas** (tres, medidas con fixtures): (1) el screenshot es VERTICAL
+  (1080×2340) y el downscale único a 1200px por el lado MAYOR dejaba el QR a
+  ~250px — ilegible; (2) su QR es denso (~v30) y lleva LOGO central, y jsQR es
+  mucho más débil que el lector nativo del móvil para ese caso; (3) la cámara
+  abría a resolución por defecto (~640×480): sin píxeles para un QR denso.
+- **Fix (Fv4.4.2)**: lector multi-escala `readQRMultiScale` (nativa→1600→1200
+  →800) + motor doble: `BarcodeDetector` NATIVO del navegador (ML Kit en
+  Android, Vision en iOS 17+) con jsQR de fallback + cámara a 1080p ideal.
+- **Lección medida**: la escala buena NO es monótona — un v30 en screenshot
+  vertical solo se lee a escala nativa y un v40+JPEG solo reducido a 1200 (el
+  suavizado filtra el ruido). Un único intento siempre pierde casos.
+- **Guardarraíl**: checks (7)/(8) de fv44 — mockup de screenshot Figuritas
+  (QR+logo+JPEG) subido e2e y QR denso v30 leído por readQRMultiScale.
+
 ### La nota de verificación de la spec interop no casa con sus propios bytes
 - **Síntoma**: el check literal del brief ("902 faltantes… sin 00/MEX/RSA") falló
   contra el payload de ejemplo REAL de la spec.

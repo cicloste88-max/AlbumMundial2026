@@ -436,6 +436,15 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   nuestro QR FIGURITAS con la app real (queda a 2 taps: MI COLECCIÓN →
   COMPARTIR → toggle FIGURITAS).
 
+- **Fv4.4.2 — lector robusto (fallo real del gate físico)**: San no podía leer
+  el QR de Figuritas ni subiendo el screenshot ni con la cámara. Medido con
+  fixtures: el downscale único a 1200 dejaba el QR de un screenshot vertical a
+  ~250px, y jsQR no puede con su QR denso con logo. Fix: `readQRMultiScale`
+  (escalas nativa/1600/1200/800 — la escala buena NO es monótona, ver ERRORES)
+  + `BarcodeDetector` nativo (ML Kit/Vision) con jsQR de fallback + cámara a
+  1080p ideal. Los helpers viven en `lib/share.ts` (expuestos en `__share`).
+  QA: checks (7) screenshot Figuritas e2e y (8) QR denso v30 → fv44 pasa a 28
+  checks (279 en total).
 - **Renombrado post-cierre (pedido por San)**: la app interop se llama
   **"Figuritas"** — todo lo visible al usuario (toggle FIGURITAS, caption,
   alias del cruce, "QR no reconocido") y la documentación usan ese nombre.

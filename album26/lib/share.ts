@@ -143,6 +143,47 @@ export async function decodeUMC(data: string): Promise<{ faltan: Set<number>; re
   return { faltan: f, repes: r };
 }
 
+// ---------- lectura de QR (Fv4.4.2) ----------
+// Dos motores: BarcodeDetector es el detector NATIVO del navegador (ML Kit en
+// Android, Vision en iOS 17+) y lee sin problema los QR densos con logo central
+// de la app Figuritas; jsQR queda de fallback donde la API no existe (desktop
+// Linux/Windows, sandbox de QA).
+type BarcodeDetectorLike = { detect(src: CanvasImageSource): Promise<{ rawValue?: string }[]> };
+export function nativeDetector(): BarcodeDetectorLike | null {
+  try {
+    const BD = (window as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => BarcodeDetectorLike }).BarcodeDetector;
+    return BD ? new BD({ formats: ['qr_code'] }) : null;
+  } catch { return null; }
+}
+export async function readQR(cv: HTMLCanvasElement): Promise<string | null> {
+  try {
+    const hits = await nativeDetector()?.detect(cv);
+    if (hits?.[0]?.rawValue) return hits[0].rawValue;
+  } catch { /* API presente pero sin backend real: sigue jsQR */ }
+  const jsQR = (await import('jsqr')).default;
+  const cx = cv.getContext('2d', { willReadFrequently: true })!;
+  const img = cx.getImageData(0, 0, cv.width, cv.height);
+  return jsQR(img.data, img.width, img.height)?.data || null;
+}
+// La escala buena depende del QR y del ruido (JPEG) y NO es monótona — medido:
+// un v30 en screenshot 1080×2340 solo se lee a escala nativa y un v40+JPEG solo
+// reducido a 1200 (el suavizado filtra el ruido). Por eso se intenta en serie
+// (el downscale único a 1200 dejaba ilegible la captura real de Figuritas).
+const QR_SCALES = [2600, 1600, 1200, 800];
+export async function readQRMultiScale(bmp: ImageBitmap): Promise<string | null> {
+  for (const maxSide of QR_SCALES) {
+    const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+    const w = Math.max(1, Math.round(bmp.width * scale));
+    const h = Math.max(1, Math.round(bmp.height * scale));
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    cv.getContext('2d', { willReadFrequently: true })!.drawImage(bmp, 0, 0, w, h);
+    const hit = await readQR(cv);
+    if (hit) return hit;
+  }
+  return null;
+}
+
 // autodetección de un QR ajeno
 export function detectFormat(data: string): 'native' | 'umc' | null {
   if (/v1\.[A-Za-z0-9_-]+/.test(data) && (data.includes('/s#') || data.startsWith('v1.') || data.startsWith('#v1.'))) return 'native';
@@ -238,5 +279,6 @@ if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).__share = {
     CANON, CANON_INDEX, stateToShare, shareSetsOf, encodeNative, decodeNative,
     encodeUMC, decodeUMC, detectFormat, cruce, textFaltan, textRepes, textCruce,
+    readQRMultiScale,
   };
 }

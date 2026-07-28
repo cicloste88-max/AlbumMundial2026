@@ -88,9 +88,11 @@ ni Android SDK): el repo queda listo para `npx cap sync` + build local.
   (ese fichero sí lo añado yo al repo cuando llegue).
 
 ## Fv4.4 — Compartir colección: ✅ HECHO, pendiente gate E2E físico (San)
-- **GATE FÍSICO post-deploy**: escanear nuestro QR **FIGURITAS** con la app
-  "Figuritas" real (y si se puede, a la inversa: escanear el suyo con
-  nuestro "Escanear QR" o "Subir imagen QR"). El QR interop queda a 2 taps:
+- **GATE FÍSICO post-deploy** (REINTENTAR tras Fv4.4.2 — el primer intento de
+  San falló por el lector, ya corregido: multi-escala + BarcodeDetector nativo
+  + cámara 1080p): escanear nuestro QR **FIGURITAS** con la app "Figuritas"
+  real, y su QR con nuestro "Subir imagen QR" (screenshot) o con la cámara
+  "Escanear QR". El QR interop queda a 2 taps:
   MI COLECCIÓN → COMPARTIR → toggle FIGURITAS. Criterio: su app lee nuestro
   payload (prefijo e7ab99e69591, bitmaps LSB-first, EC H para su logo central).
 - Sus repes se importan **como x1** (su formato no lleva cantidades; la UI del

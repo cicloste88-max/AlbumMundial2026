@@ -27,11 +27,11 @@ npm run qa:spread   # fv32 (24)     npm run qa:pwa   # fv36 (14)
 npm run qa:verif    # fv33 (18)     npm run qa:grid  # fv37 (24)
 npm run qa:visual   # fv34 (15)     npm run qa:ios   # fv38 (13)
 npm run qa:auth     # fv40 (19)     npm run qa:collection # fv41 (22)
-npm run qa:especiales # fv42 (21)   npm run qa:share # fv44 (25)
+npm run qa:especiales # fv42 (21)   npm run qa:share # fv44 (28)
 ```
 
 Las 12 suites en verde son la regresión completa exigida antes de cada push a `main`
-(estado Fv4.4: 57+24+18+15+24+14+24+13+19+22+21+25 = 276 checks).
+(estado Fv4.4.2: 57+24+18+15+24+14+24+13+19+22+21+28 = 279 checks).
 
 Variables: `QA_URL` (default `http://localhost:3000/`), `QA_CHROME` (binario Chromium),
 `QA_OUT` (carpeta de screenshots, default `./qa-shots`).
@@ -104,8 +104,10 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
   tras el re-render del cruce, snapshots byte-exactos de los textos FALTAN/REPES
   con `navigator.share` mockeado, toggle FIGURITAS (prefijo e7ab99e69591 y
   nombre visible de la app),
-  lazy-load de share/qrcode/jsqr, presupuesto iOS con la hoja abierta y /s
-  pública sin sesión (payload en el fragment). El escaneo con cámara real y la
+  lazy-load de share/qrcode/jsqr, presupuesto iOS con la hoja abierta, /s
+  pública sin sesión (payload en el fragment) y el caso real del gate físico:
+  screenshot vertical 1080×2340 de Figuritas (QR denso con logo, JPEG) leído
+  por el lector multi-escala (BarcodeDetector nativo + jsQR de fallback). El escaneo con cámara real y la
   app Figuritas física son el gate E2E post-deploy (San).
 - **shot-fv44.mjs**: capturas del gate Fv4.4 → `qa/screenshots/fv44/` (hoja
   COMPARTIR en ambos formatos, cruce tras subir un QR ajeno, vista /s).
