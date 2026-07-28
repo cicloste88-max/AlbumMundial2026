@@ -23,11 +23,13 @@ errores y guardarraíles en `docs/ERRORES.md`.
 4. **No tocar Vercel** (lo gestiona San). No crear PRs; push directo a `main` y la rama
    `claude/album26-f0-phase-qtj1n6` se mantiene sincronizada con `main`.
    Desde Fv4.4.4 San pide además **confirmar cada re-despliegue** consultando Vercel
-   en SOLO LECTURA (list_deployments → READY del SHA). OJO: el conector de Vercel
-   de la sesión hoy solo ve `porramundial2026` (la Porra) — hasta que San amplíe el
-   acceso al proyecto del álbum, la confirmación no es posible desde aquí (el
-   sandbox tampoco llega a *.vercel.app por política de red; documentado en el
-   status). En cuanto haya acceso: confirmar y reportar en el fvXX-status.
+   en SOLO LECTURA: `list_deployments` del proyecto `album-mundial2026`
+   (`prj_EENBLiS3vrXYHRTKGGfH1gHMlGuZ`, team `team_PFsKKlRwmIWCYXCwZNTeTmyx`) y
+   verificar state=READY con target=production para el SHA pusheado (cada push
+   genera DOS deploys: el de `main` a producción y una preview de la rama de
+   fase — el que confirma es el de production). Acceso concedido por San el
+   28/07/2026. El sandbox no llega a *.vercel.app (política de red): el conector
+   es la única vía. Reportar la confirmación en el fvXX-status.
 5. NO inventar datos (fechas, federaciones, qualifiers, nombres). Extras verificados solo
    donde `VERIF` los trae. Typos conocidos de la checklist se cargan TAL CUAL
    (ver `docs/PENDIENTES.md`).
