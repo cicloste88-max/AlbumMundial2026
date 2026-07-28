@@ -4,7 +4,8 @@
 //   JSON = { u: alias, t: epoch, r: [[índice, cantidad]] } + f: [faltantes]
 //   O BIEN g: [tengo] (complemento) — se emite la lista MÁS CORTA para que el
 //   QR nunca sea denso en los extremos del progreso; decode materializa f.
-// - INTEROP "Usa Mex Can 26": spec build_handoff k='qr-interop-spec'
+// - INTEROP con la app "Figuritas" (nombre del formato en su spec:
+//   "UsaMexCan26-QR", de ahí el alias interno UMC): build_handoff k='qr-interop-spec'
 //   (md5 f433860dd0a80a1333313c8a1b6f7b55, 5 anclas verificadas):
 //   payload = PREFIJO_BYTES(e7ab99e69591) + b64(gzip(bitmap_faltantes)) + ';'
 //             + b64(gzip(bitmap_repes))
@@ -112,7 +113,7 @@ export async function decodeNative(input: string): Promise<NativePayload> {
   return { u: String(json.u || ''), t: +json.t || 0, f, r: json.r };
 }
 
-// ---------- formato INTEROP UsaMexCan ----------
+// ---------- formato INTEROP Figuritas (alias interno UMC) ----------
 export const UMC_PREFIX_HEX = 'e7ab99e69591';
 const UMC_PREFIX_STR = td.decode(hexToBytes(UMC_PREFIX_HEX)); // los 6 bytes como texto UTF-8
 

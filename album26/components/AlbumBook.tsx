@@ -836,7 +836,7 @@ function panelBtnsHTML(invs: Record<string, InvMap>): string {
     + '<button class="rst' + (repes === 0 ? ' dim' : '') + '" data-panel="repes">REPES (' + repes + ')</button>';
 }
 
-/* ---------- Fv4.4: hoja COMPARTIR (QR nativo + interop UsaMexCan + textos) ---------- */
+/* ---------- Fv4.4: hoja COMPARTIR (QR nativo + interop Figuritas + textos) ---------- */
 type ShareFmt = 'a26' | 'umc';
 type ScanRes = {
   alias: string; sinCantidad: boolean; nDoy: number; nDa: number;
@@ -849,10 +849,10 @@ function shareBodyHTML(sh: ShareCtx): string {
   const rows = (l: string[]) => (l.length ? l.map((x) => '<div class="rg-row">' + x + '</div>').join('') : '<div class="cp-empty">—</div>');
   return '<div class="sh-fmt">'
     + '<button data-share-fmt="a26"' + (sh.fmt === 'a26' ? ' class="on"' : '') + '>ÁLBUM26</button>'
-    + '<button data-share-fmt="umc"' + (sh.fmt === 'umc' ? ' class="on"' : '') + '>USAMEXCAN</button></div>'
+    + '<button data-share-fmt="umc"' + (sh.fmt === 'umc' ? ' class="on"' : '') + '>FIGURITAS</button></div>'
     + '<div class="sh-qrwrap"><canvas id="share-qr" width="260" height="260"></canvas></div>'
     + '<div class="sh-cap">' + (sh.fmt === 'umc'
-      ? 'QR compatible con la app "Usa Mex Can 26" (su formato no lleva cantidades de repes).'
+      ? 'QR compatible con la app "Figuritas" (su formato no lleva cantidades de repes).'
       : 'QR del Álbum26: enlace con tus faltas y repes (con cantidades). Se abre sin cuenta.') + '</div>'
     + '<label class="sh-alias">ALIAS<input id="share-alias" maxlength="24" placeholder="Coleccionista" value="' + escAttr(sh.alias) + '"></label>'
     + '<div class="sh-row">'
@@ -1107,7 +1107,7 @@ export default function AlbumBook() {
     try {
       const share = await import('@/lib/share');
       const fmtd = share.detectFormat(data);
-      if (!fmtd) { avisar('QR no reconocido (ni Álbum26 ni UsaMexCan).'); return; }
+      if (!fmtd) { avisar('QR no reconocido (ni Álbum26 ni Figuritas).'); return; }
       let theirs: { faltan: Set<number>; repes: Map<number, number> };
       let quien = 'Coleccionista';
       let sinCantidad = false;
@@ -1118,7 +1118,7 @@ export default function AlbumBook() {
       } else {
         const d = await share.decodeUMC(data);
         theirs = { faltan: d.faltan, repes: new Map([...d.repes].map((i) => [i, 1])) };
-        quien = 'UsaMexCan';
+        quien = 'Figuritas';
         sinCantidad = true;
       }
       const cr = share.cruce(share.shareSetsOf(invsRef.current), theirs);
@@ -1151,7 +1151,7 @@ export default function AlbumBook() {
         }
         (window as unknown as Record<string, unknown>).__lastQR = payload; // QA + depuración
         const cv = document.getElementById('share-qr') as HTMLCanvasElement | null;
-        // EC: 'H' en UMC (su spec: llevan logo central) · 'M' en nativo (v40-H solo
+        // EC: 'H' en Figuritas/UMC (su spec: llevan logo central) · 'M' en nativo (v40-H solo
         // admite 1273 bytes y una colección a medias los excede; M llega a 2331).
         // margin 4 = quiet zone estándar (con menos, los lectores reales fallan).
         // width 780 con CSS a 260px: nítido en @2x/@3x y decodificable desde PNG.

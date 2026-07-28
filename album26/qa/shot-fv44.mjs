@@ -1,5 +1,5 @@
 // Capturas del gate Fv4.4 → qa/screenshots/fv44/
-// 01 hoja COMPARTIR con QR nativo · 02 toggle UsaMexCan · 03 cruce tras subir
+// 01 hoja COMPARTIR con QR nativo · 02 toggle Figuritas · 03 cruce tras subir
 // un QR ajeno · 04 vista pública /s sin sesión.
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
@@ -34,7 +34,7 @@ let qrPngA = null;
   await p.screenshot({ path: DIR + '01-compartir-qr-nativo.png' });
   await p.evaluate(() => { [...document.querySelectorAll('[data-share-fmt]')].find(x => x.dataset.shareFmt === 'umc')?.click(); });
   await p.waitForTimeout(1100);
-  await p.screenshot({ path: DIR + '02-compartir-qr-usamexcan.png' });
+  await p.screenshot({ path: DIR + '02-compartir-qr-figuritas.png' });
   // volver a nativo y capturar el PNG del QR para el cruce de B
   await p.evaluate(() => { [...document.querySelectorAll('[data-share-fmt]')].find(x => x.dataset.shareFmt === 'a26')?.click(); });
   await p.waitForTimeout(1100);

@@ -198,7 +198,7 @@ Formato: **Síntoma → Causa raíz → Fix → Guardarraíl**.
 - **Fix**: `margin: 4` + canvas interno 780px (mostrado a 260 CSS) + formato v1
   con **complemento**: se emite `f` (faltantes) o `g` (tengo), la lista más
   corta — el QR queda pequeño en ambos extremos del progreso. EC 'M' en nativo
-  (v40-H tope 1273 bytes; M 2331) y 'H' solo en UsaMexCan (su spec, logo central).
+  (v40-H tope 1273 bytes; M 2331) y 'H' solo en Figuritas (su spec, logo central).
 - **Guardarraíl**: el e2e de fv44 decodifica el PNG real del canvas (contexto B).
 
 ### La nota de verificación de la spec interop no casa con sus propios bytes

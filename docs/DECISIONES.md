@@ -383,7 +383,7 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   CC=12 verificado. El título del commit de Fv4.2 dice "(25 slots)" por herencia
   del brief v1: se queda TAL CUAL (no se reescribe historial).
 
-## Fv4.4 — Compartir colección: QR nativo + interop UsaMexCan + share WhatsApp
+## Fv4.4 — Compartir colección: QR nativo + interop app "Figuritas" + share WhatsApp
 
 - **Alcance**: tercera pestaña COMPARTIR en el panel Mi colección; sin backend
   nuevo, sin migraciones, adición pura sobre el panel de Fv4.1/4.2.
@@ -395,7 +395,9 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   pequeño en ambos extremos del progreso. `decodeNative` materializa `f` siempre.
   El payload viaja en el FRAGMENT: jamás llega al servidor (privacidad); la ruta
   `/s` es pública en `proxy.ts` y computa el cruce en cliente si hay sesión.
-- **Interop "Usa Mex Can 26"** (spec `build_handoff k='qr-interop-spec'`, md5
+- **Interop con la app "Figuritas"** (así se llama la app; su spec llama al
+  FORMATO "UsaMexCan26-QR" — de ahí el alias interno UMC del código)
+  (spec `build_handoff k='qr-interop-spec'`, md5
   f433860d verificado server+local): prefijo bytes `e7ab99e69591` +
   `b64(gzip(bitmap faltantes))` + `;` + `b64(gzip(bitmap repes))`; bitmaps de
   125 bytes/1000 bits **LSB-first**, bloque1 con semántica invertida (1=ME
@@ -426,13 +428,21 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   cabecera `Me faltan N · Álbum K/992 (P%)` y línea por equipo
   `MEX: 2, 5 (x2)`; ESPECIALES en una línea con códigos completos. Formato
   ESTABLE con snapshot byte-exacto en QA.
-- **QA**: `qa/verify-fv44-share.mjs` (24 checks, `npm run qa:share`) — el e2e de
+- **QA**: `qa/verify-fv44-share.mjs` (25 checks, `npm run qa:share`) — el e2e de
   lectura es genuino: el PNG del QR del contexto A se sube en el contexto B con
   `setInputFiles` → decode → cruce exacto en ambas direcciones. Capturas
   `qa/screenshots/fv44/` (shot-fv44.mjs). Regresión completa:
-  24 + 251 = 275/275. Gate E2E físico pendiente (San, post-deploy): escanear
-  nuestro QR USAMEXCAN con la app real (queda a 2 taps: MI COLECCIÓN →
-  COMPARTIR → toggle USAMEXCAN).
+  25 + 251 = 276/276. Gate E2E físico pendiente (San, post-deploy): escanear
+  nuestro QR FIGURITAS con la app real (queda a 2 taps: MI COLECCIÓN →
+  COMPARTIR → toggle FIGURITAS).
+
+- **Renombrado post-cierre (pedido por San)**: la app interop se llama
+  **"Figuritas"** — todo lo visible al usuario (toggle FIGURITAS, caption,
+  alias del cruce, "QR no reconocido") y la documentación usan ese nombre.
+  Los identificadores del CÓDIGO (`umc`, `encodeUMC`, `UMC_PREFIX_HEX`,
+  `data-share-fmt="umc"`) se conservan: nombran el FORMATO de su spec
+  ("UsaMexCan26-QR"), no la app, y renombrarlos solo añadiría churn. Check
+  permanente del nombre visible en fv44.
 
 ## Mantenimiento — memoria de proyecto y QA versionada
 

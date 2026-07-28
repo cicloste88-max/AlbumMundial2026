@@ -47,7 +47,7 @@ album26/                  la app (Root Directory en Vercel)
 │   ├── inventory.ts      persistencia conmutable: CloudStore (album_progress, Fv4.0)
 │   │                     con LocalStore de fallback sin configuración
 │   ├── share.ts          Fv4.4: CANON 992 · formato nativo v1 (f o g complemento) ·
-│   │                     interop UsaMexCan (spec k=qr-interop-spec) · cruce · textos
+│   │                     interop app Figuritas (spec k=qr-interop-spec) · cruce · textos
 │   │                     share con FORMATO ESTABLE (snapshot en QA) — carga LAZY
 │   ├── supabase/         client.ts (browser singleton) · server.ts (route handlers)
 │   └── teams.ts          LEGACY (datos F0 Grupo A)
@@ -92,7 +92,8 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
 - **Compartir (Fv4.4, contratos estables)**: los textos FALTAN/REPES/cruce tienen
   snapshot byte-exacto en QA — cambiarlos es romper QA a sabiendas. El QR nativo emite
   `f` o `g` (complemento, la lista más corta: con f=991 el QR v40 es ilegible); EC 'M'
-  nativo / 'H' UMC (su spec), margin 4, canvas 780→260 CSS. Interop UsaMexCan: bitmaps
+  nativo / 'H' UMC (su spec), margin 4, canvas 780→260 CSS. Interop con la app
+  "Figuritas" (su spec llama al formato UsaMexCan26-QR; alias interno umc): bitmaps
   125B LSB-first, bloque1 invertido (1=ME FALTA), repes ajenas sin cantidad → x1.
   La `verificacion_ejemplo` de su spec no casa con sus propios bytes (DECISIONES § Fv4.4).
 - **Banderas**: PNG por código FIFA en Supabase Storage (bucket público `flags/`),
@@ -137,5 +138,5 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
 | Fv4.0 auth registro abierto + progreso en nube (RLS) | ✅ (validada e2e en prod) | ver `git log` |
 | Fv4.1 panel "Mi colección" (progreso global + repes con copia) | ✅ | ver `git log` |
 | Fv4.2 secciones especiales 00/FWC/CC (+32 slots, 992 total) — censo DEFINITIVO (cierre por San: FWC-9..19 como está, CC=12, sin v3) | ✅ | ver `git log` |
-| Fv4.4 compartir colección (QR nativo + interop UsaMexCan + share texto) — gate E2E físico pendiente (San) | ✅ | ver `git log` |
+| Fv4.4 compartir colección (QR nativo + interop app Figuritas + share texto) — gate E2E físico pendiente (San) | ✅ | ver `git log` |
 | Fv5.0 empaquetado nativo (renumerado) · req #2 imágenes | ⏸ pendientes | — |

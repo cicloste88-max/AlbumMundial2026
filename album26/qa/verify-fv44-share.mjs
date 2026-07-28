@@ -1,8 +1,9 @@
-// Suite Fv4.4 — Compartir colección: QR nativo + interop UsaMexCan + share texto.
+// Suite Fv4.4 — Compartir colección: QR nativo + interop con la app "Figuritas"
+// (formato "UsaMexCan26-QR" de su spec, alias interno UMC) + share texto.
 // REQUIERE server con QA_AUTH_MOCK=1. Spec: build_handoff k='qr-interop-spec'
 // (md5 f433860dd0a80a1333313c8a1b6f7b55) — anclas y payload de ejemplo de ahí.
 //   (1) round-trip nativo encode->decode = identidad
-//   (2) anclas UsaMexCan: SOLO faltan 00, MEX-1, MEX-14, MEX-20, RSA-4
+//   (2) anclas Figuritas/UMC: SOLO faltan 00, MEX-1, MEX-14, MEX-20, RSA-4
 //       -> bits exactos en 0, 20, 33, 39, 43 (y solo esos entre 0..991)
 //   (3) decode del payload real de ejemplo -> el bitmap trae 902 bits (2 en
 //       padding 992..999): decode útil = 900 faltantes en 0..991 + 22 repes
@@ -151,7 +152,7 @@ let qrPngA = null; // PNG del QR nativo del estado A (para el e2e de subida en B
   }));
   ok('QR propio nativo: payload {origin}/s#v1.… y canvas pintado', own.payload.startsWith(new globalThis.URL(URL).origin + '/s#v1.') && own.painted, own.payload.slice(0, 48));
 
-  // toggle a UsaMexCan: prefijo + estructura y decodificable (faltan 991, repes {MEX-2})
+  // toggle a Figuritas: prefijo + estructura y decodificable (faltan 991, repes {MEX-2})
   await p.evaluate(() => { [...document.querySelectorAll('[data-share-fmt]')].find(x => x.dataset.shareFmt === 'umc')?.click(); });
   await p.waitForTimeout(900);
   const umc = await p.evaluate(async () => {
@@ -161,6 +162,14 @@ let qrPngA = null; // PNG del QR nativo del estado A (para el e2e de subida en B
     return { pref: payload.startsWith('站救'), nF: dec.faltan.size, repes: [...dec.repes] };
   });
   ok('toggle UMC: prefijo e7ab99e69591 + faltan 991 + repe en MEX-2 (idx 21)', umc.pref && umc.nF === 991 && umc.repes.join() === '21', JSON.stringify(umc));
+  // el nombre visible de la app interop es "Figuritas" (pedido por San; el
+  // identificador del formato en su spec sigue siendo UsaMexCan26-QR)
+  const vis = await p.evaluate(() => ({
+    btns: [...document.querySelectorAll('[data-share-fmt]')].map(x => x.textContent).join('|'),
+    cap: document.querySelector('.sh-cap')?.textContent || '',
+  }));
+  ok('nombre visible: toggle ÁLBUM26|FIGURITAS y caption "app Figuritas"',
+    vis.btns === 'ÁLBUM26|FIGURITAS' && vis.cap.includes('"Figuritas"'), JSON.stringify(vis));
 
   // volver a nativo y capturar el PNG del QR para el e2e de subida (contexto B)
   await p.evaluate(() => { [...document.querySelectorAll('[data-share-fmt]')].find(x => x.dataset.shareFmt === 'a26')?.click(); });
@@ -255,5 +264,5 @@ let qrPngA = null; // PNG del QR nativo del estado A (para el e2e de subida en B
 await b.close();
 const f = results.filter(r => r[0] === 'FAIL').length;
 console.log(`\n${results.length - f}/${results.length} PASS, ${f} FAIL`);
-console.log('NOTA: el gate E2E físico (escanear nuestro QR UsaMexCan con la app real)');
+console.log('NOTA: el gate E2E físico (escanear nuestro QR Figuritas con la app real)');
 console.log('      lo hace San post-deploy; la spec y sus anclas están verificadas aquí.');
