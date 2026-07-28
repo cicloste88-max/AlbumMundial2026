@@ -22,6 +22,12 @@ errores y guardarraíles en `docs/ERRORES.md`.
    `{fase, build, playwright, pregunta, sha}`, upsert ON CONFLICT).
 4. **No tocar Vercel** (lo gestiona San). No crear PRs; push directo a `main` y la rama
    `claude/album26-f0-phase-qtj1n6` se mantiene sincronizada con `main`.
+   Desde Fv4.4.4 San pide además **confirmar cada re-despliegue** consultando Vercel
+   en SOLO LECTURA (list_deployments → READY del SHA). OJO: el conector de Vercel
+   de la sesión hoy solo ve `porramundial2026` (la Porra) — hasta que San amplíe el
+   acceso al proyecto del álbum, la confirmación no es posible desde aquí (el
+   sandbox tampoco llega a *.vercel.app por política de red; documentado en el
+   status). En cuanto haya acceso: confirmar y reportar en el fvXX-status.
 5. NO inventar datos (fechas, federaciones, qualifiers, nombres). Extras verificados solo
    donde `VERIF` los trae. Typos conocidos de la checklist se cargan TAL CUAL
    (ver `docs/PENDIENTES.md`).
