@@ -28,7 +28,11 @@ const CORS = {
 export async function mockAuth(ctx, baseUrl, opts = {}) {
   const state = new Map(); // slot -> { pegado, repes }
   for (const r of opts.rows || []) state.set(r.slot, { pegado: r.pegado, repes: r.repes });
-  const calls = { upserts: [], deletes: [], logout: 0 };
+  // Fv4.5: historial ESCANEADOS en nube (alias -> fila album_scans tal cual la
+  // POSTea el cliente; opts.scanRows la siembra, opts.failScans fuerza 503)
+  const scans = new Map();
+  for (const r of opts.scanRows || []) scans.set(r.alias, r);
+  const calls = { upserts: [], deletes: [], logout: 0, scanUpserts: [], scanDeletes: [] };
 
   const session = {
     access_token: 'qa-token', token_type: 'bearer', expires_in: 3600,
@@ -94,5 +98,38 @@ export async function mockAuth(ctx, baseUrl, opts = {}) {
     return route.fulfill({ status: 405, headers: CORS, body: '' });
   });
 
-  return { calls, state };
+  // Fv4.5: public.album_scans (huella del historial ESCANEADOS)
+  await ctx.route(SUPA + '/rest/v1/album_scans**', (route) => {
+    const req = route.request();
+    const method = req.method();
+    if (method === 'OPTIONS') return route.fulfill({ status: 200, headers: CORS });
+    if (opts.failScans) {
+      // OJO: 500, no 503 — supabase-js ≥2.110 REINTENTA los GET con 503/520
+      // (backoff 1s/2s/4s): un 503 tarda ~7s en fallar y la suite lo miraría
+      // en plena ventana de reintentos. El 500 falla a la primera.
+      return route.fulfill({ status: 500, headers: CORS, contentType: 'application/json', body: '{"message":"qa: album_scans forzada a fallo"}' });
+    }
+    if (method === 'GET') {
+      const rows = [...scans.values()].sort((a, b) => (a.ts < b.ts ? 1 : -1)); // ts ISO desc
+      return route.fulfill({ headers: CORS, contentType: 'application/json', body: JSON.stringify(rows) });
+    }
+    if (method === 'POST') {
+      let body = [];
+      try { body = JSON.parse(req.postData() || '[]'); } catch {}
+      for (const r of (Array.isArray(body) ? body : [body])) { scans.set(r.alias, r); calls.scanUpserts.push(r); }
+      return route.fulfill({ status: 201, headers: CORS, contentType: 'application/json', body: '[]' });
+    }
+    if (method === 'DELETE') {
+      // filtro alias=eq.X o alias=in.("X","Y") (PostgREST solo entrecomilla si hace falta)
+      const f = new globalThis.URL(req.url()).searchParams.get('alias') || '';
+      const aliases = f.startsWith('in.(') ? f.slice(4, -1).split(',').map((x) => x.replace(/^"|"$/g, ''))
+        : f.startsWith('eq.') ? [f.slice(3)] : [];
+      for (const a of aliases) scans.delete(a);
+      calls.scanDeletes.push(aliases);
+      return route.fulfill({ status: 204, headers: CORS, body: '' });
+    }
+    return route.fulfill({ status: 405, headers: CORS, body: '' });
+  });
+
+  return { calls, state, scans };
 }

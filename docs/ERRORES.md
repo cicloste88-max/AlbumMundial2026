@@ -301,6 +301,12 @@ Formato: **Síntoma → Causa raíz → Fix → Guardarraíl**.
   (rompe el documento con SecurityError): usar `TouchEvent` sintético (ver suites).
 - **Con SW registrado, `page.route` puede no interceptar**: los contextos de suite
   que usan rutas llevan `serviceWorkers:'block'`.
+- **supabase-js ≥2.110 REINTENTA los GET/HEAD con 503 y 520** (backoff 1s/2s/4s,
+  hasta 3 reintentos): un mock de QA que fuerza el fallo con 503 no falla "ya" —
+  falla ~7 s después, y un check que mire antes ve la promesa aún pendiente
+  (mordió en fv45: la traza "hidratación KO" no aparecía y parecía un catch
+  roto; eran los reintentos en vuelo). Para fallo inmediato en mocks usar
+  **500** (no reintentable). Los POST/PATCH/DELETE no se reintentan nunca.
 - **Checks acoplados al render**: al cambiar datos o layout, algunos checks antiguos
   quedan obsoletos y hay que actualizar la SUITE, no el código (ej.: fv31/fv32
   asumían 98 hojas; fv36 medía la banda contra border-box y el marco de 3px del

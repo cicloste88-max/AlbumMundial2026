@@ -54,6 +54,8 @@ album26/                  la app (Root Directory en Vercel)
 │   ├── album-especiales.ts GENERADO desde k=album-especiales v2 (Fv4.2: 00/FWC/CC, 32 slots)
 │   ├── inventory.ts      persistencia conmutable: CloudStore (album_progress, Fv4.0)
 │   │                     con LocalStore de fallback sin configuración
+│   ├── scans.ts          Fv4.5: historial ESCANEADOS conmutable — CloudScans
+│   │                     (album_scans = verdad + localStorage espejo) / LocalScans
 │   ├── share.ts          Fv4.4: CANON 992 · formato nativo v1 (f o g complemento) ·
 │   │                     interop app Figuritas (spec k=qr-interop-spec) · cruce · textos
 │   │                     share con FORMATO ESTABLE (snapshot en QA) — carga LAZY
@@ -62,8 +64,9 @@ album26/                  la app (Root Directory en Vercel)
 ├── public/fonts/fwc26.otf · manifest.webmanifest · sw.js (PWA; /login y /auth/*
 │                         SIEMPRE red directa, sin caché)
 ├── qa/                   suites Playwright fv31..fv40 + _mock-auth.mjs (ver qa/README.md)
-├── supabase/migrations/  0001_album_progress.sql (DDL de referencia, YA aplicada
-│                         por el orquestador — NO re-aplicar) · schema.sql (histórico F1)
+├── supabase/migrations/  0001_album_progress.sql (aplicada por el orquestador) ·
+│                         0002_album_scans.sql (aplicada vía MCP en Fv4.5) — DDL de
+│                         referencia, NO re-aplicar · schema.sql (histórico F1)
 └── .env.local            NEXT_PUBLIC_SUPABASE_URL/ANON_KEY (gitignored; en Vercel
                           las pone San ANTES del deploy)
 docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
@@ -106,11 +109,19 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
   La `verificacion_ejemplo` de su spec no casa con sus propios bytes y su PREFIJO
   real es e28b8b7e, no el e7ab99e69591 de la spec (Fv4.4.5: decode tolerante a
   cualquier prefijo, emisión con el real; trazas en window.__scanDiag).
-  Historial ESCANEADOS (Fv4.4.3): localStorage `album26_scans` (payload crudo, cap 20,
-  upsert por alias); el tap recalcula el cruce contra la colección ACTUAL.
+  Historial ESCANEADOS (Fv4.4.3, en nube desde Fv4.5): payload crudo, cap 20, upsert
+  por alias; el tap recalcula el cruce contra la colección ACTUAL.
   Deploys (Fv4.4.4): la hoja COMPARTIR PRECARGA share/qrcode/jsqr al abrirse y un
   import() roto (chunks del build anterior retirados) avisa "recarga la página" —
   nunca disfrazar un chunk roto de error de lectura.
+- **Historial ESCANEADOS en BBDD (Fv4.5)**: `public.album_scans` (RLS owner-only,
+  fila por user_id+alias, payload CRUDO) es la fuente de verdad; localStorage
+  `album26_scans` queda de ESPEJO síncrono (la UI nunca espera a la red), hidratación
+  al abrir COMPARTIR con sanado (lo escaneado sin conexión SUBE) y sin tombstones
+  (trade-off documentado en DECISIONES). El cruce se pinta en bloques `.sh-block`:
+  TE PUEDE DAR primero (verde) y LE PUEDES DAR después, con subtítulos — los TEXTOS
+  share siguen bajo snapshot. OJO QA: supabase-js ≥2.110 reintenta los GET con
+  503/520 (~7s de backoff) — los mocks fuerzan fallo con 500 (ver ERRORES).
 - **Banderas**: PNG por código FIFA en Supabase Storage (bucket público `flags/`),
   fallback `flagErr` → span `.noflag`. El sandbox de Claude Code NO llega a supabase.co
   (política de red): usar el MCP de Supabase para datos y no esperar ver banderas en
@@ -153,5 +164,6 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
 | Fv4.0 auth registro abierto + progreso en nube (RLS) | ✅ (validada e2e en prod) | ver `git log` |
 | Fv4.1 panel "Mi colección" (progreso global + repes con copia) | ✅ | ver `git log` |
 | Fv4.2 secciones especiales 00/FWC/CC (+32 slots, 992 total) — censo DEFINITIVO (cierre por San: FWC-9..19 como está, CC=12, sin v3) | ✅ | ver `git log` |
-| Fv4.4 compartir colección (QR nativo + interop app Figuritas + share texto) — gate E2E físico pendiente (San) | ✅ | ver `git log` |
+| Fv4.4 compartir colección (QR nativo + interop app Figuritas + share texto) — gate E2E físico OK (San, 28/07) | ✅ | ver `git log` |
+| Fv4.5 cruce con titular claro (bloques TE PUEDE DAR / LE PUEDES DAR) + historial ESCANEADOS con huella en BBDD (`album_scans`) | ✅ | ver `git log` |
 | Fv5.0 empaquetado nativo (renumerado) · req #2 imágenes | ⏸ pendientes | — |

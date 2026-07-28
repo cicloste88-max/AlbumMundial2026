@@ -84,11 +84,13 @@ export default function SharedView() {
             <>
               <div className="sv-stats"><b>{view.pegados}/992</b> pegados · faltan <b>{view.faltan}</b> · <b>{view.repes}</b> repes</div>
               {view.cruce && (
+                // Fv4.5: mismo orden y subtítulos que la hoja COMPARTIR —
+                // primero lo que te ENTRA, después lo que DAS
                 <>
-                  <div className="sv-sec">LE PUEDES DAR ({view.cruce.nDoy})</div>
-                  <div className="sv-lines">{view.cruce.leDoy.length ? view.cruce.leDoy.map((l, i) => <div key={'d' + i}>{l}</div>) : <div>—</div>}</div>
-                  <div className="sv-sec">TE PUEDE DAR ({view.cruce.nDa})</div>
-                  <div className="sv-lines">{view.cruce.meDa.length ? view.cruce.meDa.map((l, i) => <div key={'m' + i}>{l}</div>) : <div>—</div>}</div>
+                  <div className="sv-sec">TE PUEDE DAR ({view.cruce.nDa}) · sus repes que a ti te faltan</div>
+                  <div className="sv-lines">{view.cruce.meDa.length ? view.cruce.meDa.map((l, i) => <div key={'m' + i}>{l}</div>) : <div>Nada por ahora</div>}</div>
+                  <div className="sv-sec">LE PUEDES DAR ({view.cruce.nDoy}) · tus repes que le faltan</div>
+                  <div className="sv-lines">{view.cruce.leDoy.length ? view.cruce.leDoy.map((l, i) => <div key={'d' + i}>{l}</div>) : <div>Nada por ahora</div>}</div>
                 </>
               )}
               <div className="sv-sec">LE FALTAN ({view.faltan})</div>

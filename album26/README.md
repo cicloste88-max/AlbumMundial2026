@@ -25,6 +25,7 @@ npm run qa:auth    # fv40 · auth + progreso en nube con mocks (19)
 npm run qa:collection # fv41 · panel Mi colección (22)
 npm run qa:especiales # fv42 · secciones especiales 00/FWC/CC (21)
 npm run qa:share   # fv44 · compartir: QR nativo + interop Figuritas + cruce (36)
+npm run qa:scans   # fv45 · historial ESCANEADOS con huella en BBDD (9)
 ```
 
 Las suites necesitan la app corriendo con `QA_AUTH_MOCK=1` (`QA_URL`, default
@@ -56,6 +57,9 @@ lib/
 │                     — NO editar a mano; se regenera por script en cada fase de datos
 ├── inventory.ts      InventoryStore (loadAll/loadCountry/put/clear) · CloudStore
 │                     (album_progress, Fv4.0) · LocalStore de fallback
+├── scans.ts          Fv4.5: historial ESCANEADOS conmutable — CloudScans
+│                     (album_scans en nube = fuente de verdad + localStorage de
+│                     espejo síncrono, sanado al hidratar) · LocalScans fallback
 ├── share.ts          Fv4.4 (carga LAZY): CANON 992 · QR nativo v1 (f o g complemento)
 │                     · interop con la app "Figuritas" (formato UsaMexCan26-QR de su
 │                     spec, alias interno UMC: bitmaps 125B LSB-first, prefijo e7ab99e69591)
@@ -68,8 +72,8 @@ public/
 └── sw.js             SW mínimo: cache-first /_next/static, network-first documento,
                       guardas Safari (sin redirects cacheados, fallback offline)
 qa/                   suites Playwright + screenshots de gate (qa/README.md)
-supabase/             migrations/0001_album_progress.sql (DDL de referencia, YA aplicada
-                      por el orquestador — NO re-aplicar) · schema.sql (histórico F1)
+supabase/             migrations/0001_album_progress.sql · 0002_album_scans.sql (DDL de
+                      referencia, YA aplicadas — NO re-aplicar) · schema.sql (histórico F1)
 ```
 
 ## Reglas que no se pueden romper (resumen; detalle en ../CLAUDE.md)
@@ -88,3 +92,6 @@ supabase/             migrations/0001_album_progress.sql (DDL de referencia, YA 
 - **Compartir (Fv4.4)**: los textos FALTAN/REPES/cruce tienen snapshot byte-exacto en
   QA (formato estable); el QR usa EC M nativo / H Figuritas, margin 4, canvas 780.
   Las librerías qrcode/jsqr SOLO se cargan lazy (presupuesto iOS).
+- **Historial ESCANEADOS (Fv4.5)**: `album_scans` en nube es la fuente de verdad y
+  localStorage queda de espejo síncrono — la UI nunca espera a la red. OJO en QA:
+  supabase-js reintenta los GET con 503/520 (~7s); los mocks fuerzan fallo con 500.

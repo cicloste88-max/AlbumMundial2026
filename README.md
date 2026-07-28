@@ -32,10 +32,14 @@ Tracker de la colección de cromos del **álbum oficial Panini del Mundial FIFA 
   formatos — enlace nativo (se abre sin cuenta en `/s`; los datos viajan en el
   fragment `#…` y no tocan el servidor) o **compatible con la app "Figuritas"**
   —, alias editable, **Escanear QR** (cámara) o **Subir imagen QR**, y al leer el QR
-  de otro coleccionista el **cruce local**: "le puedes dar / te puede dar" con
-  cantidades — y cada escaneo queda en el historial **ESCANEADOS** del
-  dispositivo (tap = recalcular el cruce con tu colección actual). Botones "Compartir FALTAN/REPES" como texto (Web Share API o
-  portapapeles) listos para WhatsApp.
+  de otro coleccionista el **cruce local** en dos bloques con titular claro (Fv4.5):
+  primero **TE PUEDE DAR** (sus repes que a ti te faltan) y después **LE PUEDES
+  DAR** (tus repes que le faltan), con cantidades — y cada escaneo queda en el
+  historial **ESCANEADOS guardado en tu cuenta** (Fv4.5: huella en BBDD que
+  sobrevive a salidas accidentales de la app, bloqueos de pantalla y cambios de
+  dispositivo; tap = recalcular el cruce con tu colección actual). Botones
+  "Compartir FALTAN/REPES" como texto (Web Share API o portapapeles) listos
+  para WhatsApp.
 - **PWA**: manifest instalable (standalone, iconos 192/512 servidos desde bucket) y
   service worker mínimo (cache-first para estáticos, network-first para el documento).
 - **Datos verificados**: nombres del álbum oficial contrastados por OCR, federaciones,

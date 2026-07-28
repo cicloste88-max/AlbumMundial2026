@@ -14,10 +14,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ORDER, PALETAS, ALBUM_TEAMS, VERIF } from '@/lib/album-data';
 import { getStore, type InvMap, type Entry } from '@/lib/inventory';
+import { getScansStore, loadLocalScans, SCANS_CAP, type ScanSaved, type ScansDelta } from '@/lib/scans';
 import { getSupabase, supabaseConfigured } from '@/lib/supabase/client';
 import { ESP_PAGES, ESP_SLOTS, ESP_TOTAL, ALBUM_TOTAL, ESP_SECTION_FIRST, type EspPageData, type EspSlot } from '@/lib/album-especiales';
 
 const store = getStore();
+const scansStore = getScansStore(); // Fv4.5: historial ESCANEADOS con huella en BBDD
 const MAX_REPES = 5;
 const FLAG_BASE = 'https://cmyfyswystjgzdwbqyyb.supabase.co/storage/v1/object/public/flags/';
 // Fv3.5: los PNG del bucket pasaron de iconos circulares a rectangulares w640;
@@ -439,6 +441,17 @@ const CSS = `:root{
 .sh-crh{font-weight:700; font-size:13.5px; color:#20153F; margin-bottom:2px}
 .sh-crh .sh-note{color:#6C5FA0; font-weight:600; font-size:11.5px}
 .sh-cruce .cp-copy{margin-top:8px}
+/* Fv4.5: bloques del cruce con titular claro (verde = te entra, morado = das) */
+.sh-block{border-radius:10px; padding:9px 10px 7px; margin-top:8px; border:2px solid}
+.sh-block.da{background:#EAF4DF; border-color:#6FB43F}
+.sh-block.doy{background:#EDE9FA; border-color:#B9AEDF}
+.sh-bh{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+.sh-bt{font-weight:800; font-size:12.5px; letter-spacing:.06em; color:#20153F}
+.sh-bn{font-family:var(--font-baloo),cursive; font-weight:800; font-size:21px; line-height:1}
+.sh-block.da .sh-bn{color:#3F7A1C}
+.sh-block.doy .sh-bn{color:#6C5FA0}
+.sh-bsub{font-weight:600; font-size:11.5px; color:#5C5480; margin:1px 0 7px}
+.sh-bempty{color:#6C5FA0; font-weight:600; font-size:12.5px; padding:2px 0 5px}
 /* Fv4.2: fila ESPECIALES (distinta de los 48 equipos: full-width, destacada) */
 .cp-esp{display:flex; align-items:center; gap:10px; width:100%; border:0; cursor:pointer; text-align:left;
   background:#2B1E7E; color:#fff; border-radius:8px; padding:11px 13px; margin-bottom:12px;
@@ -849,12 +862,8 @@ type ScanRes = {
 };
 // Fv4.4.3: entrada del historial ESCANEADOS — se guarda el payload CRUDO del QR
 // y el cruce se recalcula contra la colección ACTUAL al consultarlo (nDoy/nDa
-// son el resumen del momento del escaneo, solo orientativo para la fila)
-type ScanSaved = { ts: number; fmt: ShareFmt; alias: string; data: string; nDoy: number; nDa: number };
-const SCANS_KEY = 'album26_scans';
-const loadScans = (): ScanSaved[] => {
-  try { return JSON.parse(localStorage.getItem(SCANS_KEY) || '[]'); } catch { return []; }
-};
+// son el resumen del momento del escaneo, solo orientativo para la fila).
+// Fv4.5: el tipo y la persistencia (nube+espejo local) viven en lib/scans.ts.
 type ShareCtx = { fmt: ShareFmt; alias: string; scanning: boolean; scanRes: ScanRes | null; scans: ScanSaved[] };
 const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -864,8 +873,16 @@ const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').
 const esChunkRoto = (e: unknown) => /import|chunk|fetch|module|load/i.test(String(e));
 const MSG_RECARGA = 'Hay una versión nueva de la app: recarga la página para actualizar.';
 
+// Fv4.5: bloque del cruce con titular claro — qué ENTRA y qué SALE, cada uno
+// con contador grande y subtítulo que explica de dónde sale la lista
+const cruceBloqueHTML = (cls: string, titulo: string, n: number, sub: string, l: string[]) =>
+  '<div class="sh-block ' + cls + '"><div class="sh-bh"><span class="sh-bt">' + titulo
+  + '</span><span class="sh-bn">' + n + '</span></div>'
+  + '<div class="sh-bsub">' + sub + '</div>'
+  + (l.length ? l.map((x) => '<div class="rg-row">' + x + '</div>').join('') : '<div class="sh-bempty">Nada por ahora</div>')
+  + '</div>';
+
 function shareBodyHTML(sh: ShareCtx): string {
-  const rows = (l: string[]) => (l.length ? l.map((x) => '<div class="rg-row">' + x + '</div>').join('') : '<div class="cp-empty">—</div>');
   return '<div class="sh-fmt">'
     + '<button data-share-fmt="a26"' + (sh.fmt === 'a26' ? ' class="on"' : '') + '>ÁLBUM26</button>'
     + '<button data-share-fmt="umc"' + (sh.fmt === 'umc' ? ' class="on"' : '') + '>FIGURITAS</button></div>'
@@ -884,12 +901,14 @@ function shareBodyHTML(sh: ShareCtx): string {
       ? '<div class="sh-scan"><video id="share-video" playsinline muted autoplay></video>'
         + '<button class="cp-copy stop" data-share-scan-stop>CANCELAR CÁMARA</button></div>'
       : '')
+    // Fv4.5: primero lo que ENTRA (sus repes que te faltan), después lo que
+    // SALE (tus repes que le faltan) — el orden y los subtítulos los pidió San
     + (sh.scanRes
       ? '<div class="sh-cruce" id="sh-cruce">'
         + '<div class="sh-crh">Cruce con <b>' + escAttr(sh.scanRes.alias) + '</b>'
         + (sh.scanRes.sinCantidad ? ' <span class="sh-note">(sus repes sin cantidad: x1)</span>' : '') + '</div>'
-        + '<div class="rg-head">LE PUEDES DAR (' + sh.scanRes.nDoy + ')</div>' + rows(sh.scanRes.leDoy)
-        + '<div class="rg-head">TE PUEDE DAR (' + sh.scanRes.nDa + ')</div>' + rows(sh.scanRes.meDa)
+        + cruceBloqueHTML('da', 'TE PUEDE DAR', sh.scanRes.nDa, 'Sus repes que a ti te faltan', sh.scanRes.meDa)
+        + cruceBloqueHTML('doy', 'LE PUEDES DAR', sh.scanRes.nDoy, 'Tus repes que le faltan', sh.scanRes.leDoy)
         + '<button class="cp-copy" data-share-copy-cruce>⧉ COPIAR RESULTADO</button></div>'
       : '')
     // Fv4.4.3: historial de escaneos (por dispositivo; tap = recalcular cruce)
@@ -1048,14 +1067,32 @@ export default function AlbumBook() {
   });
   const [scanning, setScanning] = useState(false);
   const [scanRes, setScanRes] = useState<ScanRes | null>(null);
-  // Fv4.4.3: historial ESCANEADOS (localStorage del dispositivo, cap 20)
-  const [scans, setScans] = useState<ScanSaved[]>(() => (typeof window !== 'undefined' ? loadScans() : []));
+  // Fv4.4.3: historial ESCANEADOS (cap 20); Fv4.5: nube + espejo local.
+  // El primer render sale del espejo (síncrono); la nube hidrata al abrir la hoja.
+  const [scans, setScans] = useState<ScanSaved[]>(() => (typeof window !== 'undefined' ? loadLocalScans() : []));
   const scansRef = useRef(scans);
   scansRef.current = scans;
-  const saveScans = useCallback((list: ScanSaved[]) => {
-    setScans(list);
-    try { localStorage.setItem(SCANS_KEY, JSON.stringify(list)); } catch { /* modo privado/lleno: solo memoria */ }
+  const saveScans = useCallback((list: ScanSaved[], delta: ScansDelta) => {
+    setScans(list); // optimista: el espejo local se escribe dentro del store
+    scansStore.save(list, delta).catch(async (e) => {
+      // la nube falló pero el espejo quedó al día: se sube en la próxima
+      // hidratación (sanado de loadAll) — solo se deja traza, sin molestar
+      try { (await import('@/lib/share')).diag('scans: nube KO ' + String(e).slice(0, 60)); } catch { /* sin traza */ }
+    });
   }, []);
+  // Fv4.5: hidratar ESCANEADOS desde la BBDD al abrir COMPARTIR (una vez por
+  // montaje): la huella sobrevive a salidas accidentales, bloqueos de pantalla
+  // y cambios de dispositivo; si la nube no responde, ya está el espejo local
+  const scansHydrated = useRef(false);
+  useEffect(() => {
+    if (panel !== 'compartir' || scansHydrated.current) return;
+    scansHydrated.current = true;
+    scansStore.loadAll()
+      .then((list) => setScans(list))
+      .catch(async (e) => {
+        try { (await import('@/lib/share')).diag('scans: hidratación KO ' + String(e).slice(0, 60)); } catch { /* sin traza */ }
+      });
+  }, [panel]);
   const [toast, setToast] = useState<{ msg: string; err: boolean } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const avisar = useCallback((msg: string, err = true) => {
@@ -1176,8 +1213,12 @@ export default function AlbumBook() {
       const out = await computeScan(data);
       if (!out) { avisar('QR leído, pero no es de Álbum26 ni de Figuritas.'); return; }
       const e: ScanSaved = { ts: Date.now(), fmt: out.fmt, alias: out.res.alias, data, nDoy: out.res.nDoy, nDa: out.res.nDa };
-      // upsert por alias (re-escanear a la misma persona refresca su entrada)
-      saveScans([e, ...scansRef.current.filter((x) => x.alias !== e.alias)].slice(0, 20));
+      // upsert por alias (re-escanear a la misma persona refresca su entrada);
+      // los expulsados por el cap van en el delta para borrarse también en nube
+      const prev = scansRef.current;
+      const list = [e, ...prev.filter((x) => x.alias !== e.alias)].slice(0, SCANS_CAP);
+      const del = prev.filter((x) => !list.some((n) => n.alias === x.alias)).map((x) => x.alias);
+      saveScans(list, { put: e, del });
       setScanRes(out.res);
       setScanning(false);
       avisar('Cruce con ' + out.res.alias + ' listo ✓ · guardado en ESCANEADOS', false);
@@ -1359,7 +1400,9 @@ export default function AlbumBook() {
       // dentro de la fila y closest() encontraría los dos)
       const sdel = target.closest('[data-scan-del]') as HTMLElement | null;
       if (sdel) {
-        saveScans(scansRef.current.filter((x) => x.ts !== +sdel.dataset.scanDel!));
+        const ts = +sdel.dataset.scanDel!;
+        const gone = scansRef.current.find((x) => x.ts === ts);
+        saveScans(scansRef.current.filter((x) => x.ts !== ts), { del: gone ? [gone.alias] : [] });
         return;
       }
       const sopen = target.closest('[data-scan-open]') as HTMLElement | null;

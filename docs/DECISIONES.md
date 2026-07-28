@@ -482,6 +482,24 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   `data-share-fmt="umc"`) se conservan: nombran el FORMATO de su spec
   ("UsaMexCan26-QR"), no la app, y renombrarlos solo añadiría churn. Check
   permanente del nombre visible en fv44.
+- **Fv4.5 — cruce con titular claro + historial ESCANEADOS con huella en BBDD
+  (pedido por San tras estrenar el escaneo)**: (a) el cruce se pinta en dos
+  BLOQUES con contador grande y subtítulo — primero TE PUEDE DAR (verde, "Sus
+  repes que a ti te faltan") y después LE PUEDES DAR ("Tus repes que le
+  faltan") — mismo orden y subtítulos en /s; los TEXTOS share NO cambian (su
+  snapshot byte-exacto sigue intacto). (b) nueva tabla `public.album_scans`
+  (RLS owner-only calcada de album_progress, PK user_id+alias, payload CRUDO;
+  migración 0002 aplicada vía MCP — en el proyecto compartido solo se CREÓ
+  esta tabla) con `lib/scans.ts`: CloudScans (nube = fuente de verdad,
+  localStorage `album26_scans` de ESPEJO síncrono — la UI nunca espera a la
+  red) o LocalScans sin configuración. El historial hidrata de BBDD al abrir
+  COMPARTIR, cada escaneo hace upsert (los expulsados por el cap 20 se borran
+  también en nube), el ✕ borra en ambos y lo escaneado sin conexión SUBE al
+  hidratar (sanado). Trade-off asumido y documentado: sin tombstones, un
+  borrado hecho en otro dispositivo puede resucitar desde un espejo viejo.
+  Suite fv45 (9 checks; 296 total) + trampa nueva en ERRORES: supabase-js
+  ≥2.110 reintenta los GET con 503/520 (~7s de backoff) — los mocks de QA
+  fuerzan fallo con 500.
 
 ## Mantenimiento — memoria de proyecto y QA versionada
 

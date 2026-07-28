@@ -28,10 +28,11 @@ npm run qa:verif    # fv33 (18)     npm run qa:grid  # fv37 (24)
 npm run qa:visual   # fv34 (15)     npm run qa:ios   # fv38 (13)
 npm run qa:auth     # fv40 (19)     npm run qa:collection # fv41 (22)
 npm run qa:especiales # fv42 (21)   npm run qa:share # fv44 (36)
+npm run qa:scans    # fv45 (9)
 ```
 
-Las 12 suites en verde son la regresión completa exigida antes de cada push a `main`
-(estado Fv4.4.5: 57+24+18+15+24+14+24+13+19+22+21+36 = 287 checks).
+Las 13 suites en verde son la regresión completa exigida antes de cada push a `main`
+(estado Fv4.5: 57+24+18+15+24+14+24+13+19+22+21+36+9 = 296 checks).
 
 Variables: `QA_URL` (default `http://localhost:3000/`), `QA_CHROME` (binario Chromium),
 `QA_OUT` (carpeta de screenshots, default `./qa-shots`).
@@ -114,10 +115,18 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
   y resiliencia a deploys (precarga de módulos con la hoja abierta; chunks
   retirados → toast de recarga). El escaneo con cámara real y la
   app Figuritas física son el gate E2E post-deploy (San).
+- **verify-fv45-scans.mjs** (390×844, 4 contextos): historial ESCANEADOS con
+  huella en BBDD (`album_scans`) + cruce en bloques Fv4.5 — el escaneo hace
+  upsert con el payload crudo, un contexto NUEVO (localStorage vacío) hidrata
+  el historial desde la nube y el tap recalcula el cruce (TE PUEDE DAR primero,
+  subtítulos exactos), el ✕ borra también en nube, con la nube caída (500; con
+  503 supabase-js reintenta ~7s) sostiene el espejo local y deja traza en
+  `__scanDiag`, y una entrada solo-local se SUBE al hidratar (sanado).
 - **shot-fv44.mjs**: capturas del gate Fv4.4 → `qa/screenshots/fv44/` (hoja
   COMPARTIR en ambos formatos, cruce tras subir un QR ajeno, vista /s).
 - **_mock-auth.mjs**: helper compartido — cookies de sesión (qa-session + sb-*) y
-  mocks stateful de `auth/v1` y `rest/v1/album_progress` con CORS/OPTIONS.
+  mocks stateful de `auth/v1`, `rest/v1/album_progress` y `rest/v1/album_scans`
+  (Fv4.5: `scanRows` siembra, `failScans` fuerza 500) con CORS/OPTIONS.
 
 ## Notas
 

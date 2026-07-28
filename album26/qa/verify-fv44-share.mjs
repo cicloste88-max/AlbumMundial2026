@@ -248,20 +248,31 @@ let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
   await openShare(p);
   await p.setInputFiles('#share-file', { name: 'qrA.png', mimeType: 'image/png', buffer: qrPngA });
   await p.waitForTimeout(1200); // decodificar imagen + cruce + re-render
-  const cru = await p.evaluate(() => {
+  // Fv4.5: el cruce va en bloques con titular claro — PRIMERO lo que te entra
+  // (TE PUEDE DAR, verde) y después lo que das (LE PUEDES DAR), cada uno con
+  // contador grande y subtítulo explicativo
+  const blkEval = () => {
     const box = document.getElementById('sh-cruce');
     if (!box) return { toast: document.getElementById('ab-toast')?.textContent || '(sin toast)' };
+    const blk = (sel) => ({
+      t: box.querySelector(sel + ' .sh-bt')?.textContent || '',
+      n: box.querySelector(sel + ' .sh-bn')?.textContent || '',
+      sub: box.querySelector(sel + ' .sh-bsub')?.textContent || '',
+      rows: [...box.querySelectorAll(sel + ' .rg-row')].map(x => x.textContent),
+    });
     return {
       head: box.querySelector('.sh-crh')?.textContent || '',
-      heads: [...box.querySelectorAll('.rg-head')].map(x => x.textContent),
-      rows: [...box.querySelectorAll('.rg-row')].map(x => x.textContent),
+      orden: [...box.querySelectorAll('.sh-bt')].map(x => x.textContent),
+      da: blk('.sh-block.da'), doy: blk('.sh-block.doy'),
     };
-  });
-  ok('(4) e2e subir imagen: cruce visible', !!cru.heads, JSON.stringify(cru));
-  ok('(4) e2e: LE PUEDES DAR (1) → MEX: 5 (su falta ∩ mi repe)',
-    !!cru.heads && cru.heads[0] === 'LE PUEDES DAR (1)' && cru.rows[0] === 'MEX: 5', JSON.stringify(cru.rows || cru));
-  ok('(4) e2e: TE PUEDE DAR (1) → MEX: 2 (x2) (mi falta ∩ su repe con cantidad)',
-    !!cru.heads && cru.heads[1] === 'TE PUEDE DAR (1)' && cru.rows[1] === 'MEX: 2 (x2)', JSON.stringify(cru.rows || cru));
+  };
+  const cru = await p.evaluate(blkEval);
+  ok('(4) e2e subir imagen: cruce visible con TE PUEDE DAR primero (Fv4.5)',
+    !!cru.orden && cru.orden.join('|') === 'TE PUEDE DAR|LE PUEDES DAR', JSON.stringify(cru.orden || cru));
+  ok('(4) e2e: TE PUEDE DAR 1 → MEX: 2 (x2) + subtítulo "Sus repes que a ti te faltan"',
+    !!cru.da && cru.da.n === '1' && cru.da.rows.join() === 'MEX: 2 (x2)' && cru.da.sub === 'Sus repes que a ti te faltan', JSON.stringify(cru.da || cru));
+  ok('(4) e2e: LE PUEDES DAR 1 → MEX: 5 + subtítulo "Tus repes que le faltan"',
+    !!cru.doy && cru.doy.n === '1' && cru.doy.rows.join() === 'MEX: 5' && cru.doy.sub === 'Tus repes que le faltan', JSON.stringify(cru.doy || cru));
   // el re-render que pinta el cruce recrea el <canvas>: el QR debe repintarse
   const qrB = await p.evaluate(() => { const c = document.getElementById('share-qr'); if (!c) return 0;
     const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
@@ -290,15 +301,11 @@ let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
   }, 'data:image/png;base64,' + qrUmcA.toString('base64'));
   await p.setInputFiles('#share-file', { name: 'captura.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(shotUrl.split(',')[1], 'base64') });
   await p.waitForTimeout(1600);
-  const cru2 = await p.evaluate(() => {
-    const box = document.getElementById('sh-cruce');
-    if (!box) return { toast: document.getElementById('ab-toast')?.textContent || '(sin toast)' };
-    return { head: box.querySelector('.sh-crh')?.textContent || '', rows: [...box.querySelectorAll('.rg-row')].map(x => x.textContent) };
-  });
+  const cru2 = await p.evaluate(blkEval);
   ok('(7) screenshot Figuritas (vertical 1080×2340, QR con logo, JPEG): leído y cruzado',
-    !!cru2.rows && cru2.head.includes('Figuritas') && cru2.head.includes('sin cantidad'), JSON.stringify(cru2));
+    !!cru2.da && cru2.head.includes('Figuritas') && cru2.head.includes('sin cantidad'), JSON.stringify(cru2));
   ok('(7) repes de Figuritas sin cantidad → x1: TE PUEDE DAR muestra MEX: 2 (sin x2)',
-    !!cru2.rows && cru2.rows[0] === 'MEX: 5' && cru2.rows[1] === 'MEX: 2', JSON.stringify(cru2.rows || cru2));
+    !!cru2.da && cru2.da.rows.join() === 'MEX: 2' && cru2.doy.rows.join() === 'MEX: 5', JSON.stringify(cru2.da || cru2));
   // Fv4.4.5: la traza de diagnóstico registró el flujo (subida + lector + scan)
   const dg = await p.evaluate(() => (window.__scanDiag || []).join(' | '));
   ok('(7) __scanDiag registra subida/lector/scan (diagnóstico consultable)',
@@ -350,7 +357,7 @@ let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
   });
   ok('(9) persiste tras recargar y el tap recalcula el cruce (nativo, con cantidades)',
     hist2.n === 2 && !hist2.cruceAntes && !!rec && rec.head.includes('Coleccionista')
-    && rec.rows[0] === 'MEX: 5' && rec.rows[1] === 'MEX: 2 (x2)', JSON.stringify({ hist2, rec }));
+    && rec.rows[0] === 'MEX: 2 (x2)' && rec.rows[1] === 'MEX: 5', JSON.stringify({ hist2, rec }));
 
   // el ✕ borra la entrada y el borrado persiste en localStorage
   await p.evaluate(() => { [...document.querySelectorAll('[data-scan-del]')][0]?.click(); });

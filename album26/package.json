@@ -18,7 +18,8 @@
     "qa:auth": "node qa/verify-fv40-auth.mjs",
     "qa:collection": "node qa/verify-fv41-collection.mjs",
     "qa:especiales": "node qa/verify-fv42-especiales.mjs",
-    "qa:share": "node qa/verify-fv44-share.mjs"
+    "qa:share": "node qa/verify-fv44-share.mjs",
+    "qa:scans": "node qa/verify-fv45-scans.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
