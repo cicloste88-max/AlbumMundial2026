@@ -101,6 +101,11 @@ ni Android SDK): el repo queda listo para `npx cap sync` + build local.
   docs/DECISIONES.md § Fv4.4); si el gate físico fallara, mirar primero ahí.
 - El QR nativo comparte un ENLACE (`{origin}/s#v1.…`): cualquier cámara de móvil
   lo abre en `/s` sin cuenta (el payload va en el fragment, no toca el servidor).
+- **Dónde se consulta un escaneo (Fv4.4.3)**: el cruce aparece al momento (con
+  auto-scroll) y queda en la sección **ESCANEADOS** de la hoja COMPARTIR —
+  historial POR DISPOSITIVO (localStorage, últimas 20 personas); el tap
+  recalcula el cruce contra la colección actual. Si se quiere sincronizado
+  entre dispositivos (tabla nueva en Supabase), es una fase aparte pequeña.
 
 ## F4 — PWA: ✅ instalable desde Fv3.6
 - Manifest completo (name/short_name/display standalone/colores `#1E1B33`), iconos

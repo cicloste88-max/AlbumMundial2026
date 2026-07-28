@@ -22,6 +22,10 @@
 //       BarcodeDetector nativo cuando existe (aquí no: valida el fallback jsQR)
 //   (8) robustez del lector: QR denso (~v30) + logo + JPEG en screenshot
 //       vertical → readQRMultiScale lo lee (con una sola escala fallaba)
+//   (9) Fv4.4.3, historial ESCANEADOS: cada escaneo se guarda en el dispositivo
+//       (localStorage album26_scans, cap 20, upsert por alias); persiste tras
+//       recargar, el tap recalcula el cruce contra la colección ACTUAL y el ✕
+//       borra. Nace del gate físico: "¿dónde consulto lo escaneado?"
 // Uso:  QA_URL=http://localhost:3000 node qa/verify-fv44-share.mjs
 import { chromium } from 'playwright-core';
 import QRCode from 'qrcode'; // dependencia de la app: genera el fixture denso (7b)
@@ -283,6 +287,46 @@ let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
     return hit === esperado;
   }, { qr: qrDensoURL, esperado: denso });
   ok('(8) lector multi-escala: QR denso (~v30) + logo + JPEG en screenshot vertical', lect === true);
+
+  // (9) historial ESCANEADOS: tras los dos escaneos de este contexto hay dos
+  // entradas (Figuritas la más reciente, Coleccionista después)
+  const hist = await p.evaluate(() => ({
+    head: document.querySelector('#sh-hist .rg-head')?.textContent || '',
+    rows: [...document.querySelectorAll('.sh-scanrow .sh-who')].map(x => x.textContent),
+    nums: [...document.querySelectorAll('.sh-scanrow .sh-nums')].map(x => x.textContent),
+  }));
+  ok('(9) ESCANEADOS (2): Figuritas (reciente) y Coleccionista con resumen das/te da',
+    hist.head === 'ESCANEADOS (2)' && hist.rows.length === 2
+    && hist.rows[0].includes('Figuritas') && hist.rows[1].includes('Coleccionista')
+    && hist.nums[0] === 'das 1 · te da 1' && hist.nums[1] === 'das 1 · te da 1', JSON.stringify(hist));
+
+  // persiste tras recargar; el tap recalcula el cruce FRESCO (nativo → con x2)
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.waitForTimeout(700);
+  await openShare(p);
+  const hist2 = await p.evaluate(() => ({
+    n: document.querySelectorAll('.sh-scanrow').length,
+    cruceAntes: !!document.getElementById('sh-cruce'),
+  }));
+  await p.evaluate(() => { [...document.querySelectorAll('[data-scan-open]')][1]?.click(); });
+  await p.waitForTimeout(900);
+  const rec = await p.evaluate(() => {
+    const box = document.getElementById('sh-cruce');
+    if (!box) return null;
+    return { head: box.querySelector('.sh-crh')?.textContent || '', rows: [...box.querySelectorAll('.rg-row')].map(x => x.textContent) };
+  });
+  ok('(9) persiste tras recargar y el tap recalcula el cruce (nativo, con cantidades)',
+    hist2.n === 2 && !hist2.cruceAntes && !!rec && rec.head.includes('Coleccionista')
+    && rec.rows[0] === 'MEX: 5' && rec.rows[1] === 'MEX: 2 (x2)', JSON.stringify({ hist2, rec }));
+
+  // el ✕ borra la entrada y el borrado persiste en localStorage
+  await p.evaluate(() => { [...document.querySelectorAll('[data-scan-del]')][0]?.click(); });
+  await p.waitForTimeout(500);
+  const afterDel = await p.evaluate(() => ({
+    n: document.querySelectorAll('.sh-scanrow').length,
+    stored: JSON.parse(localStorage.getItem('album26_scans') || '[]').length,
+  }));
+  ok('(9) el ✕ borra la entrada y persiste el borrado', afterDel.n === 1 && afterDel.stored === 1, JSON.stringify(afterDel));
   await ctx.close();
 }
 

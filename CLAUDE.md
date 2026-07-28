@@ -96,6 +96,8 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
   "Figuritas" (su spec llama al formato UsaMexCan26-QR; alias interno umc): bitmaps
   125B LSB-first, bloque1 invertido (1=ME FALTA), repes ajenas sin cantidad → x1.
   La `verificacion_ejemplo` de su spec no casa con sus propios bytes (DECISIONES § Fv4.4).
+  Historial ESCANEADOS (Fv4.4.3): localStorage `album26_scans` (payload crudo, cap 20,
+  upsert por alias); el tap recalcula el cruce contra la colección ACTUAL.
 - **Banderas**: PNG por código FIFA en Supabase Storage (bucket público `flags/`),
   fallback `flagErr` → span `.noflag`. El sandbox de Claude Code NO llega a supabase.co
   (política de red): usar el MCP de Supabase para datos y no esperar ver banderas en

@@ -33,7 +33,8 @@ Tracker de la colección de cromos del **álbum oficial Panini del Mundial FIFA 
   fragment `#…` y no tocan el servidor) o **compatible con la app "Figuritas"**
   —, alias editable, **Escanear QR** (cámara) o **Subir imagen QR**, y al leer el QR
   de otro coleccionista el **cruce local**: "le puedes dar / te puede dar" con
-  cantidades. Botones "Compartir FALTAN/REPES" como texto (Web Share API o
+  cantidades — y cada escaneo queda en el historial **ESCANEADOS** del
+  dispositivo (tap = recalcular el cruce con tu colección actual). Botones "Compartir FALTAN/REPES" como texto (Web Share API o
   portapapeles) listos para WhatsApp.
 - **PWA**: manifest instalable (standalone, iconos 192/512 servidos desde bucket) y
   service worker mínimo (cache-first para estáticos, network-first para el documento).
@@ -88,7 +89,7 @@ npm run qa:ios     # presupuesto composición iOS + safe-areas nativas (13)
 npm run qa:auth    # auth + progreso en nube con mocks (19)
 npm run qa:collection # panel Mi colección (22)
 npm run qa:especiales # secciones especiales 00/FWC/CC (21)
-npm run qa:share   # compartir: QR nativo + interop + cruce e2e (28)
+npm run qa:share   # compartir: QR nativo + interop + cruce e2e (31)
 ```
 
 Desde Fv4.0 el server de QA corre con `QA_AUTH_MOCK=1` (el sandbox no llega a

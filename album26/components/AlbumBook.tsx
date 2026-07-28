@@ -431,6 +431,11 @@ const CSS = `:root{
 .sh-scan video{width:100%; border-radius:10px; background:#000; aspect-ratio:1/1; object-fit:cover}
 .sh-scan .cp-copy.stop{margin-top:8px; background:#C8481F; width:100%}
 .sh-cruce{margin-top:8px; border-top:2px solid #E2DCCB; padding-top:10px}
+.sh-hist{margin-top:10px; border-top:2px solid #E2DCCB; padding-top:2px}
+.sh-scanrow{display:flex; align-items:center; gap:8px; cursor:pointer}
+.sh-scanrow .sh-who{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sh-scanrow .sh-nums{color:#6C5FA0; font-weight:700; font-size:11.5px; flex:0 0 auto; white-space:nowrap}
+.sh-scanrow .sh-del{border:0; background:none; color:#C8481F; font-weight:800; font-size:14px; cursor:pointer; padding:2px 4px; flex:0 0 auto}
 .sh-crh{font-weight:700; font-size:13.5px; color:#20153F; margin-bottom:2px}
 .sh-crh .sh-note{color:#6C5FA0; font-weight:600; font-size:11.5px}
 .sh-cruce .cp-copy{margin-top:8px}
@@ -842,7 +847,15 @@ type ScanRes = {
   alias: string; sinCantidad: boolean; nDoy: number; nDa: number;
   leDoy: string[]; meDa: string[]; copyText: string;
 };
-type ShareCtx = { fmt: ShareFmt; alias: string; scanning: boolean; scanRes: ScanRes | null };
+// Fv4.4.3: entrada del historial ESCANEADOS — se guarda el payload CRUDO del QR
+// y el cruce se recalcula contra la colección ACTUAL al consultarlo (nDoy/nDa
+// son el resumen del momento del escaneo, solo orientativo para la fila)
+type ScanSaved = { ts: number; fmt: ShareFmt; alias: string; data: string; nDoy: number; nDa: number };
+const SCANS_KEY = 'album26_scans';
+const loadScans = (): ScanSaved[] => {
+  try { return JSON.parse(localStorage.getItem(SCANS_KEY) || '[]'); } catch { return []; }
+};
+type ShareCtx = { fmt: ShareFmt; alias: string; scanning: boolean; scanRes: ScanRes | null; scans: ScanSaved[] };
 const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 function shareBodyHTML(sh: ShareCtx): string {
@@ -872,6 +885,16 @@ function shareBodyHTML(sh: ShareCtx): string {
         + '<div class="rg-head">LE PUEDES DAR (' + sh.scanRes.nDoy + ')</div>' + rows(sh.scanRes.leDoy)
         + '<div class="rg-head">TE PUEDE DAR (' + sh.scanRes.nDa + ')</div>' + rows(sh.scanRes.meDa)
         + '<button class="cp-copy" data-share-copy-cruce>⧉ COPIAR RESULTADO</button></div>'
+      : '')
+    // Fv4.4.3: historial de escaneos (por dispositivo; tap = recalcular cruce)
+    + (sh.scans.length
+      ? '<div class="sh-hist" id="sh-hist"><div class="rg-head">ESCANEADOS (' + sh.scans.length + ')</div>'
+        + sh.scans.map((e) => '<div class="rg-row sh-scanrow" data-scan-open="' + e.ts + '">'
+          + '<span class="sh-who"><b>' + escAttr(e.alias) + '</b> · ' + new Date(e.ts).toLocaleDateString('es-ES')
+          + ' · ' + (e.fmt === 'umc' ? 'Figuritas' : 'Álbum26') + '</span>'
+          + '<span class="sh-nums">das ' + e.nDoy + ' · te da ' + e.nDa + '</span>'
+          + '<button class="sh-del" data-scan-del="' + e.ts + '" aria-label="Borrar">✕</button></div>').join('')
+        + '</div>'
       : '');
 }
 
@@ -1019,6 +1042,14 @@ export default function AlbumBook() {
   });
   const [scanning, setScanning] = useState(false);
   const [scanRes, setScanRes] = useState<ScanRes | null>(null);
+  // Fv4.4.3: historial ESCANEADOS (localStorage del dispositivo, cap 20)
+  const [scans, setScans] = useState<ScanSaved[]>(() => (typeof window !== 'undefined' ? loadScans() : []));
+  const scansRef = useRef(scans);
+  scansRef.current = scans;
+  const saveScans = useCallback((list: ScanSaved[]) => {
+    setScans(list);
+    try { localStorage.setItem(SCANS_KEY, JSON.stringify(list)); } catch { /* modo privado/lleno: solo memoria */ }
+  }, []);
   const [toast, setToast] = useState<{ msg: string; err: boolean } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const avisar = useCallback((msg: string, err = true) => {
@@ -1090,7 +1121,7 @@ export default function AlbumBook() {
       + (isDesktop ? stageHTML(page, invs) : bookHTML(page, invs))
       + statusHTML(page, invs)
       // Fv4.1: el panel se monta SOLO al abrir y se desmonta al cerrar
-      + (panel ? panelHTML(panel, invs, { fmt: shareFmt, alias, scanning, scanRes }) : '');
+      + (panel ? panelHTML(panel, invs, { fmt: shareFmt, alias, scanning, scanRes, scans }) : '');
     // centrar el chip activo (Fv4.2: el scroll vive en .chips-wrap, no en #chips)
     const wrap = el.querySelector('.chips-wrap') as HTMLElement | null;
     const onChip = wrap?.querySelector('.on') as HTMLElement | null;
@@ -1100,39 +1131,61 @@ export default function AlbumBook() {
     }
     // Fv3.4: ajustar wordmark del header L al ancho disponible
     fitHeaders(el);
-  }, [page, invs, isDesktop, ready, panel, shareFmt, alias, scanning, scanRes]);
+  }, [page, invs, isDesktop, ready, panel, shareFmt, alias, scanning, scanRes, scans]);
 
-  // Fv4.4: procesar un QR ajeno leído (autodetección de formato) → cruce local
-  const handleScanned = useCallback(async (data: string) => {
-    try {
-      const share = await import('@/lib/share');
-      const fmtd = share.detectFormat(data);
-      if (!fmtd) { avisar('QR no reconocido (ni Álbum26 ni Figuritas).'); return; }
-      let theirs: { faltan: Set<number>; repes: Map<number, number> };
-      let quien = 'Coleccionista';
-      let sinCantidad = false;
-      if (fmtd === 'native') {
-        const d = await share.decodeNative(data);
-        theirs = { faltan: new Set(d.f), repes: new Map(d.r) };
-        quien = d.u || 'Coleccionista';
-      } else {
-        const d = await share.decodeUMC(data);
-        theirs = { faltan: d.faltan, repes: new Map([...d.repes].map((i) => [i, 1])) };
-        quien = 'Figuritas';
-        sinCantidad = true;
-      }
-      const cr = share.cruce(share.shareSetsOf(invsRef.current), theirs);
-      setScanRes({
+  // Fv4.4: decodificar un payload ajeno y calcular el cruce contra la colección
+  // ACTUAL (sin efectos — lo usan el escaneo nuevo y el historial ESCANEADOS)
+  const computeScan = useCallback(async (data: string): Promise<{ res: ScanRes; fmt: ShareFmt } | null> => {
+    const share = await import('@/lib/share');
+    const fmtd = share.detectFormat(data);
+    if (!fmtd) return null;
+    let theirs: { faltan: Set<number>; repes: Map<number, number> };
+    let quien = 'Coleccionista';
+    let sinCantidad = false;
+    if (fmtd === 'native') {
+      const d = await share.decodeNative(data);
+      theirs = { faltan: new Set(d.f), repes: new Map(d.r) };
+      quien = d.u || 'Coleccionista';
+    } else {
+      const d = await share.decodeUMC(data);
+      theirs = { faltan: d.faltan, repes: new Map([...d.repes].map((i) => [i, 1])) };
+      quien = 'Figuritas';
+      sinCantidad = true;
+    }
+    const cr = share.cruce(share.shareSetsOf(invsRef.current), theirs);
+    return {
+      fmt: fmtd === 'native' ? 'a26' : 'umc',
+      res: {
         alias: quien, sinCantidad, nDoy: cr.leDoy.length, nDa: cr.meDa.length,
         leDoy: share.lineasCruce(cr.leDoy), meDa: share.lineasCruce(cr.meDa),
         copyText: share.textCruce(quien, cr, sinCantidad),
-      });
+      },
+    };
+  }, []);
+
+  // Fv4.4: procesar un QR ajeno leído → cruce + guardarlo en ESCANEADOS (4.4.3)
+  const handleScanned = useCallback(async (data: string) => {
+    try {
+      const out = await computeScan(data);
+      if (!out) { avisar('QR no reconocido (ni Álbum26 ni Figuritas).'); return; }
+      const e: ScanSaved = { ts: Date.now(), fmt: out.fmt, alias: out.res.alias, data, nDoy: out.res.nDoy, nDa: out.res.nDa };
+      // upsert por alias (re-escanear a la misma persona refresca su entrada)
+      saveScans([e, ...scansRef.current.filter((x) => x.alias !== e.alias)].slice(0, 20));
+      setScanRes(out.res);
       setScanning(false);
+      avisar('Cruce con ' + out.res.alias + ' listo ✓ · guardado en ESCANEADOS', false);
     } catch {
       avisar('No se pudo leer ese QR. Prueba de nuevo con mejor luz o más cerca.');
       setScanning(false);
     }
-  }, [avisar]);
+  }, [avisar, computeScan, saveScans]);
+
+  // Fv4.4.3: al llegar un cruce, llevar la vista hasta él — quedaba pintado
+  // fuera del viewport del panel y parecía que el escaneo "no hacía nada"
+  useEffect(() => {
+    if (!scanRes || panel !== 'compartir') return;
+    document.getElementById('sh-cruce')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [scanRes, panel]);
 
   // Fv4.4: generar el QR propio al abrir Compartir (librerías lazy)
   useEffect(() => {
@@ -1159,9 +1212,9 @@ export default function AlbumBook() {
       } catch { if (!dead) avisar('No se pudo generar el QR.'); }
     })();
     return () => { dead = true; };
-    // scanning/scanRes: su cambio reconstruye el panel (innerHTML) y recrea el
-    // canvas vacío — sin ellos aquí, el QR se quedaba en blanco tras un escaneo
-  }, [panel, shareFmt, alias, invs, ready, scanning, scanRes, avisar]);
+    // scanning/scanRes/scans: su cambio reconstruye el panel (innerHTML) y
+    // recrea el canvas vacío — sin ellos aquí, el QR se quedaba en blanco
+  }, [panel, shareFmt, alias, invs, ready, scanning, scanRes, scans, avisar]);
 
   // Fv4.4: escáner de cámara, solo mientras scanning. Fv4.4.2: pide 1080p (a
   // 640×480 un QR denso no tiene píxeles suficientes) y usa BarcodeDetector
@@ -1275,6 +1328,25 @@ export default function AlbumBook() {
               .then(() => avisar('Texto copiado al portapapeles ✓', false))
               .catch(() => avisar('No se pudo compartir ni copiar.'));
           }
+        })();
+        return;
+      }
+      // Fv4.4.3: historial ESCANEADOS — borrar va ANTES que abrir (el ✕ vive
+      // dentro de la fila y closest() encontraría los dos)
+      const sdel = target.closest('[data-scan-del]') as HTMLElement | null;
+      if (sdel) {
+        saveScans(scansRef.current.filter((x) => x.ts !== +sdel.dataset.scanDel!));
+        return;
+      }
+      const sopen = target.closest('[data-scan-open]') as HTMLElement | null;
+      if (sopen) {
+        const entry = scansRef.current.find((x) => x.ts === +sopen.dataset.scanOpen!);
+        if (entry) (async () => {
+          try {
+            const out = await computeScan(entry.data);
+            if (out) setScanRes(out.res); // cruce FRESCO contra la colección actual
+            else avisar('Ese QR guardado ya no se reconoce.');
+          } catch { avisar('No se pudo recalcular ese cruce.'); }
         })();
         return;
       }
@@ -1401,7 +1473,7 @@ export default function AlbumBook() {
       el.removeEventListener('touchstart', onTouchStart);
       el.removeEventListener('touchend', onTouchEnd);
     };
-  }, [page, invs, apply, isDesktop, panel, avisar, scanRes, handleScanned]);
+  }, [page, invs, apply, isDesktop, panel, avisar, scanRes, handleScanned, computeScan, saveScans]);
 
   return (
     <>

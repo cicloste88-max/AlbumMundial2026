@@ -56,6 +56,10 @@ let qrPngA = null;
   await p.evaluate(() => document.getElementById('sh-cruce')?.scrollIntoView({ block: 'center' }));
   await p.waitForTimeout(300);
   await p.screenshot({ path: DIR + '03-cruce-tras-escanear.png' });
+  // Fv4.4.3: historial ESCANEADOS
+  await p.evaluate(() => document.getElementById('sh-hist')?.scrollIntoView({ block: 'center' }));
+  await p.waitForTimeout(300);
+  await p.screenshot({ path: DIR + '05-escaneados.png' });
   await ctx.close();
 }
 

@@ -201,6 +201,22 @@ Formato: **Síntoma → Causa raíz → Fix → Guardarraíl**.
   (v40-H tope 1273 bytes; M 2331) y 'H' solo en Figuritas (su spec, logo central).
 - **Guardarraíl**: el e2e de fv44 decodifica el PNG real del canvas (contexto B).
 
+### Tras escanear "la aplicación no hace nada" (gate físico, reporte de San)
+- **Síntoma**: el QR ya se leía (Fv4.4.2) pero al usuario no le constaba: ni
+  resultado visible ni forma de consultarlo después.
+- **Causas**: el cruce se pintaba AL FONDO de la hoja COMPARTIR, fuera del
+  viewport del panel (overflow), sin scroll ni confirmación; y el resultado era
+  efímero (estado en memoria — se perdía al cerrar el panel).
+- **Fix (Fv4.4.3)**: auto-scroll suave hasta `#sh-cruce` al llegar un cruce +
+  toast informativo "Cruce con X listo ✓ · guardado en ESCANEADOS" + historial
+  **ESCANEADOS** persistente (localStorage `album26_scans`, cap 20, upsert por
+  alias): guarda el payload CRUDO y recalcula el cruce contra la colección
+  ACTUAL al consultarlo (un cruce congelado del pasado engaña).
+- **Lección**: un resultado que aparece fuera del viewport no existe para el
+  usuario — toda acción asíncrona necesita una señal visible en el acto.
+- **Guardarraíl**: checks (9) de fv44 (lista, persistencia tras reload,
+  recálculo al tap, borrado con ✕).
+
 ### El lector no leía el QR real de la app Figuritas (gate físico, reporte de San)
 - **Síntoma**: "Subir imagen QR" con un screenshot del QR de Figuritas decía
   "No se ha encontrado ningún QR en la imagen"; la cámara tampoco lo detectaba.

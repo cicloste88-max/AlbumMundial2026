@@ -445,6 +445,18 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   1080p ideal. Los helpers viven en `lib/share.ts` (expuestos en `__share`).
   QA: checks (7) screenshot Figuritas e2e y (8) QR denso v30 → fv44 pasa a 28
   checks (279 en total).
+- **Fv4.4.3 — visibilidad del escaneo + historial ESCANEADOS (feedback del
+  gate: "no hace nada... ¿dónde consulto lo escaneado?")**: el cruce quedaba
+  pintado fuera del viewport del panel y no se guardaba. Ahora: auto-scroll al
+  cruce + toast de confirmación, y sección ESCANEADOS en la hoja COMPARTIR —
+  cada escaneo guarda `{ts, fmt, alias, payload crudo, nDoy, nDa}` en
+  localStorage `album26_scans` (cap 20; upsert por alias: re-escanear a la
+  misma persona refresca su entrada; los anónimos "Coleccionista" se pisan
+  entre sí — anima a usar alias). El tap RECALCULA el cruce contra la
+  colección actual (guardar el cruce congelado engañaría); el resumen
+  "das N · te da M" de la fila es del momento del escaneo (orientativo). El ✕
+  borra. Por dispositivo, sin backend (restricción de la fase); si San quiere
+  sincronizarlo en la nube, es fase aparte. fv44 pasa a 31 checks (282 total).
 - **Renombrado post-cierre (pedido por San)**: la app interop se llama
   **"Figuritas"** — todo lo visible al usuario (toggle FIGURITAS, caption,
   alias del cruce, "QR no reconocido") y la documentación usan ese nombre.
