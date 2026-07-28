@@ -40,8 +40,12 @@ const URL = process.env.QA_URL || 'http://localhost:3000/';
 const results = [];
 const ok = (n, c, x='') => { results.push([c?'PASS':'FAIL', n, x]); console.log((c?'PASS':'FAIL')+'  '+n+(x?'  ['+x+']':'')); if(!c) process.exitCode=1; };
 
-// payload real de ejemplo de la spec (sin el prefijo binario)
+// payload de ejemplo de la spec (sin el prefijo binario)
 const EJEMPLO = 'H4sIAAAAAAAAE/v/HwHi1ZuFVX+CWOtznZDE/8tLSP7HCuTjz2CXAIP9FzxcJ006uAuXPDMANLXjEX0AAAA=;H4sIAAAAAAAAE2NgQIAGAR4oy4HBgAFZIqGBAStwwC4MA2wGRiwMAiw45QHOLeyLfQAAAA==';
+// payload REAL de la app Figuritas (Fv4.4.5): leído byte a byte (jsQR binaryData)
+// del QR físico del gate — prefijo e28b8b7e ('⋋~'), NO el de la spec; el usuario
+// real tiene 319 faltas, 0 repes en el bloque 2 y el bit 0 ('00') a 0
+const REAL = '⋋~H4sIAAAAAAAAAwF9AIL/gMwEgAQAIAAAAQCABAAAGBAA0wBSAOYquQBVUBAmdFAyAiNYTNCkzhIFVQGrQE0fmVRaWZYqYhB6okBGJEKI6PWfx9gUXDMhLLlQUSXmvrRIAUGDLHJVCOoDWzxnY4pQAKBAANCjCQDAkCgYQ9dQyAEhYICBQ2CDIMwCCACmYKEZfQAAAA==;H4sIAAAAAAAAA2NgGEAAAKh0odt9AAAA';
 
 const b = await chromium.launch({ executablePath: EXE });
 
@@ -128,6 +132,26 @@ let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
   ok('(3) ejemplo real: faltantes incluyen las 5 anclas (bytes 0..11=0xff) y repes fijan LSB-first',
     ej.anclas && ej.repes.join() === REPES_LSB.join(), JSON.stringify(ej.repes));
 
+  // (3b) Fv4.4.5 — payload REAL de la app Figuritas (el QR del gate físico):
+  // prefijo e28b8b7e que la spec no documenta; el decode tolerante debe leerlo
+  const rl = await p.evaluate(async (real) => {
+    const s = window.__share;
+    const fmt = s.detectFormat(real);
+    const dec = await s.decodeUMC(real);
+    const f = [...dec.faltan].sort((a, b) => a - b);
+    return { fmt, nF: f.size ?? f.length, nR: dec.repes.size, head10: f.slice(0, 10), tiene00: dec.faltan.has(0) };
+  }, REAL);
+  ok('(3b) QR REAL de Figuritas: detectado umc y decodificado (319 faltas, 0 repes, sin el 00)',
+    rl.fmt === 'umc' && rl.nF === 319 && rl.nR === 0 && !rl.tiene00
+    && rl.head10.join() === '7,10,11,14,15,18,31,34,53,72', JSON.stringify(rl));
+  // (3c) compat: el prefijo VIEJO de la spec delante también decodifica
+  const compat = await p.evaluate(async (ej2) => {
+    const s = window.__share;
+    const dec = await s.decodeUMC('站救' + ej2);
+    return dec.faltan.size;
+  }, EJEMPLO);
+  ok('(3c) compat: payload con el prefijo de la spec (e7ab99e69591) sigue decodificando', compat === 900, String(compat));
+
   // (4) cruce puro con dos estados sintéticos
   const cz = await p.evaluate(() => {
     const s = window.__share;
@@ -177,9 +201,9 @@ let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
     const s = window.__share;
     const payload = window.__lastQR || '';
     const dec = await s.decodeUMC(payload);
-    return { pref: payload.startsWith('站救'), nF: dec.faltan.size, repes: [...dec.repes] };
+    return { pref: payload.startsWith('⋋~'), nF: dec.faltan.size, repes: [...dec.repes] };
   });
-  ok('toggle UMC: prefijo e7ab99e69591 + faltan 991 + repe en MEX-2 (idx 21)', umc.pref && umc.nF === 991 && umc.repes.join() === '21', JSON.stringify(umc));
+  ok('toggle UMC: prefijo REAL e28b8b7e + faltan 991 + repe en MEX-2 (idx 21)', umc.pref && umc.nF === 991 && umc.repes.join() === '21', JSON.stringify(umc));
   // el nombre visible de la app interop es "Figuritas" (pedido por San; el
   // identificador del formato en su spec sigue siendo UsaMexCan26-QR)
   const vis = await p.evaluate(() => ({
@@ -275,6 +299,10 @@ let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
     !!cru2.rows && cru2.head.includes('Figuritas') && cru2.head.includes('sin cantidad'), JSON.stringify(cru2));
   ok('(7) repes de Figuritas sin cantidad → x1: TE PUEDE DAR muestra MEX: 2 (sin x2)',
     !!cru2.rows && cru2.rows[0] === 'MEX: 5' && cru2.rows[1] === 'MEX: 2', JSON.stringify(cru2.rows || cru2));
+  // Fv4.4.5: la traza de diagnóstico registró el flujo (subida + lector + scan)
+  const dg = await p.evaluate(() => (window.__scanDiag || []).join(' | '));
+  ok('(7) __scanDiag registra subida/lector/scan (diagnóstico consultable)',
+    dg.includes('subida:') && dg.includes('readQR:') && dg.includes('scan: leído'), JSON.stringify(dg.slice(-160)));
 
   // (8) robustez del lector: QR denso ~v30 (fallaba con el downscale único)
   let denso = 'FIG-DENSO-'; while (denso.length < 640) denso += 'Qx9zK4mP2wL8vR5tB1nJ7cD3hF6gS0aE';

@@ -89,7 +89,7 @@ npm run qa:ios     # presupuesto composición iOS + safe-areas nativas (13)
 npm run qa:auth    # auth + progreso en nube con mocks (19)
 npm run qa:collection # panel Mi colección (22)
 npm run qa:especiales # secciones especiales 00/FWC/CC (21)
-npm run qa:share   # compartir: QR nativo + interop + cruce e2e (33)
+npm run qa:share   # compartir: QR nativo + interop + cruce e2e (36)
 ```
 
 Desde Fv4.0 el server de QA corre con `QA_AUTH_MOCK=1` (el sandbox no llega a

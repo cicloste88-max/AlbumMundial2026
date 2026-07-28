@@ -465,6 +465,16 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   import roto muestra "Hay una versión nueva: recarga la página"
   (`esChunkRoto`), y la cámara se degrada de BarcodeDetector a jsQR tras 10
   fallos seguidos del backend nativo. fv44 pasa a 33 checks (284 total).
+- **Fv4.4.5 — prefijo REAL de Figuritas + decode tolerante + trazas (fallo
+  final del gate)**: el QR físico de la app (imagen de San, extraída del chat
+  y leída byte a byte) demostró que su prefijo es e28b8b7e y no el e7ab99e69591
+  de la spec — el decode lo rechazaba con un toast engañoso. decodeUMC ahora
+  localiza los bloques H4sI ignorando el prefijo (acepta el real, el de la
+  spec o ninguno; 1 o 2 bloques — su QR de intercambio trae repes VACÍAS),
+  detectFormat va por contenido y encodeUMC emite el prefijo real. Payload
+  real como fixture (319 faltas / 0 repes / LSB anclado) + smoke con la
+  imagen original por la UI completa (captura 06). Trazas window.__scanDiag
+  para diagnóstico sin devtools. fv44 pasa a 36 checks (287 total).
 - **Renombrado post-cierre (pedido por San)**: la app interop se llama
   **"Figuritas"** — todo lo visible al usuario (toggle FIGURITAS, caption,
   alias del cruce, "QR no reconocido") y la documentación usan ese nombre.

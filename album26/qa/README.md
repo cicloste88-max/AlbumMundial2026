@@ -27,11 +27,11 @@ npm run qa:spread   # fv32 (24)     npm run qa:pwa   # fv36 (14)
 npm run qa:verif    # fv33 (18)     npm run qa:grid  # fv37 (24)
 npm run qa:visual   # fv34 (15)     npm run qa:ios   # fv38 (13)
 npm run qa:auth     # fv40 (19)     npm run qa:collection # fv41 (22)
-npm run qa:especiales # fv42 (21)   npm run qa:share # fv44 (33)
+npm run qa:especiales # fv42 (21)   npm run qa:share # fv44 (36)
 ```
 
 Las 12 suites en verde son la regresión completa exigida antes de cada push a `main`
-(estado Fv4.4.4: 57+24+18+15+24+14+24+13+19+22+21+33 = 284 checks).
+(estado Fv4.4.5: 57+24+18+15+24+14+24+13+19+22+21+36 = 287 checks).
 
 Variables: `QA_URL` (default `http://localhost:3000/`), `QA_CHROME` (binario Chromium),
 `QA_OUT` (carpeta de screenshots, default `./qa-shots`).
@@ -97,8 +97,10 @@ si algo falla. Los screenshots del gate se guardan en `QA_OUT`.
 - **verify-fv44-share.mjs** (390×844 @3x, 3 contextos): compartir colección —
   CANON 992 con las anclas de la spec de interop, round-trip nativo
   encode→decode identidad, anclas Figuritas/UMC (bits exactos 0/20/33/39/43),
-  decode del payload real de ejemplo verificado contra sus BYTES (902 bits del
-  bitmap → 900 útiles en 0..991 + 22 repes cuyas posiciones fijan LSB-first),
+  decode del payload de ejemplo de la spec verificado contra sus BYTES (902
+  bits del bitmap → 900 útiles + 22 repes que fijan LSB-first), el payload
+  REAL de la app (prefijo e28b8b7e que la spec no documenta → 319 faltas,
+  0 repes) y compat con el prefijo de la spec,
   cruce puro y e2e genuino (el PNG del QR propio del contexto A se sube con
   `setInputFiles` en el contexto B → cruce en ambas direcciones), QR repintado
   tras el re-render del cruce, snapshots byte-exactos de los textos FALTAN/REPES

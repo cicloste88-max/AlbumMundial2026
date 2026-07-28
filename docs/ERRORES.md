@@ -201,6 +201,30 @@ Formato: **Síntoma → Causa raíz → Fix → Guardarraíl**.
   (v40-H tope 1273 bytes; M 2331) y 'H' solo en Figuritas (su spec, logo central).
 - **Guardarraíl**: el e2e de fv44 decodifica el PNG real del canvas (contexto B).
 
+### El QR real de Figuritas lleva OTRO prefijo que el de la spec (gate, San)
+- **Síntoma**: cámara y subida "dan error" con el QR de Figuritas — pero la
+  LECTURA óptica funcionaba: el fallo era del decode, que rechazaba el payload.
+- **Diagnóstico** (clave: medir sobre el artefacto REAL): la imagen que San
+  adjuntó al chat se extrajo del transcript de la sesión, se pasó por el
+  pipeline exacto de la app (la leyó a la primera) y `jsQR.binaryData` dio los
+  bytes crudos: el prefijo real es **e28b8b7e** ('⋋~', 4 bytes) — la spec decía
+  e7ab99e69591 (6 bytes). Segunda discrepancia de esa spec contra la app real
+  (la primera: su `verificacion_ejemplo`). El resto sí cuadra: 2 bloques
+  b64(gzip(125B)) separados por ';', padding 992..999 a cero. Su QR de
+  intercambio trae el bloque 2 (repes) VACÍO.
+- **Fix (Fv4.4.5)**: `decodeUMC` tolerante (localiza los bloques `H4sI`
+  ignorando cualquier prefijo; acepta 1 o 2 bloques), `detectFormat` por
+  contenido, y se EMITE el prefijo real e28b8b7e (es el que su app reconoce;
+  el de la spec queda documentado en `UMC_PREFIX_SPEC_HEX`). El payload real
+  quedó como fixture en fv44 (319 faltas, 0 repes, bit 0 a 0, LSB anclado).
+- **Trazas (petición de San)**: `window.__scanDiag` (cap 60) registra cada
+  paso — subida (tipo/KB/dimensiones), lector (BD/jsQR, escala, hit/null),
+  decode (motivo exacto del rechazo) — y los toasts distinguen "QR leído pero
+  no interpretable" de "no se encontró QR" y del chunk roto.
+- **Lección**: una spec de interop NO es la verdad — el artefacto real manda.
+  Todo dato de spec externa se ancla a bytes reales en QA en cuanto exista un
+  ejemplar físico (aquí bastó el screenshot del usuario para cerrar el caso).
+
 ### Tras un deploy, la cámara "no escanea" y subir imagen "da error" (gate, San)
 - **Síntoma**: los dos flujos de lectura rotos A LA VEZ justo después de
   publicarse una versión nueva — con un lector que no había cambiado.

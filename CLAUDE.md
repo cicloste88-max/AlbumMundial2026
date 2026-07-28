@@ -103,7 +103,9 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
   nativo / 'H' UMC (su spec), margin 4, canvas 780→260 CSS. Interop con la app
   "Figuritas" (su spec llama al formato UsaMexCan26-QR; alias interno umc): bitmaps
   125B LSB-first, bloque1 invertido (1=ME FALTA), repes ajenas sin cantidad → x1.
-  La `verificacion_ejemplo` de su spec no casa con sus propios bytes (DECISIONES § Fv4.4).
+  La `verificacion_ejemplo` de su spec no casa con sus propios bytes y su PREFIJO
+  real es e28b8b7e, no el e7ab99e69591 de la spec (Fv4.4.5: decode tolerante a
+  cualquier prefijo, emisión con el real; trazas en window.__scanDiag).
   Historial ESCANEADOS (Fv4.4.3): localStorage `album26_scans` (payload crudo, cap 20,
   upsert por alias); el tap recalcula el cruce contra la colección ACTUAL.
   Deploys (Fv4.4.4): la hoja COMPARTIR PRECARGA share/qrcode/jsqr al abrirse y un

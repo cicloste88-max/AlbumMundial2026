@@ -48,6 +48,17 @@ export function stateToShare(invs: Invs): ShareState {
 const te = new TextEncoder();
 const td = new TextDecoder();
 
+// Fv4.4.5: traza de diagnóstico en memoria (window.__scanDiag, cap 60 líneas).
+// Cada paso del escaneo/decode deja constancia del motivo real de un fallo —
+// consultable sin devtools (nació del gate: el toast genérico no decía nada).
+export function diag(m: string): void {
+  try {
+    const w = window as unknown as { __scanDiag?: string[] };
+    (w.__scanDiag = w.__scanDiag || []).push(m);
+    if (w.__scanDiag.length > 60) w.__scanDiag.shift();
+  } catch { /* SSR: sin window */ }
+}
+
 function hexToBytes(hex: string): Uint8Array {
   const out = new Uint8Array(hex.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
@@ -114,8 +125,14 @@ export async function decodeNative(input: string): Promise<NativePayload> {
 }
 
 // ---------- formato INTEROP Figuritas (alias interno UMC) ----------
-export const UMC_PREFIX_HEX = 'e7ab99e69591';
-const UMC_PREFIX_STR = td.decode(hexToBytes(UMC_PREFIX_HEX)); // los 6 bytes como texto UTF-8
+// Fv4.4.5: el prefijo REAL de la app (leído byte a byte del QR físico de San,
+// jsQR binaryData) es e28b8b7e ('⋋~') — NO el e7ab99e69591 de la spec (segunda
+// discrepancia de la spec contra la app real; ver DECISIONES § Fv4.4). Se EMITE
+// el real (es el que su app reconoce) y el decode tolera cualquiera de los dos
+// (o ninguno): localiza los bloques H4sI ignorando lo que tengan delante.
+export const UMC_PREFIX_HEX = 'e28b8b7e';
+export const UMC_PREFIX_SPEC_HEX = 'e7ab99e69591'; // el de la spec (no lo emite la app real)
+const UMC_PREFIX_STR = td.decode(hexToBytes(UMC_PREFIX_HEX));
 
 function bitmapFrom(set: Iterable<number>): Uint8Array {
   const b = new Uint8Array(125); // 1000 bits; 992..999 quedan a 0 (padding)
@@ -135,12 +152,18 @@ export async function encodeUMC(faltanIdx: Iterable<number>, repeIdx: Iterable<n
 }
 
 export async function decodeUMC(data: string): Promise<{ faltan: Set<number>; repes: Set<number> }> {
-  let s = data.trim();
-  if (s.startsWith(UMC_PREFIX_STR)) s = s.slice(UMC_PREFIX_STR.length);
-  const parts = s.split(';');
-  if (parts.length !== 2 || !parts[0].startsWith('H4sI') || !parts[1].startsWith('H4sI')) throw new Error('formato');
-  const [f, r] = await Promise.all(parts.map(async (p) => bitsToSet(await unpack(b64ToBytes(p), 'gzip'))));
-  return { faltan: f, repes: r };
+  const s = data.trim();
+  // tolerante a prefijos: el QR real lleva e28b8b7e, la spec decía e7ab99e69591
+  // y el ejemplo de la spec no lleva ninguno — se busca el primer bloque gzip
+  const i0 = s.indexOf('H4sI');
+  if (i0 < 0) { diag('decodeUMC: sin bloque H4sI'); throw new Error('formato'); }
+  const parts = s.slice(i0).split(';')
+    .map((p) => { const j = p.indexOf('H4sI'); return j >= 0 ? p.slice(j) : p; })
+    .filter((p) => p.startsWith('H4sI'));
+  if (parts.length < 1 || parts.length > 2) { diag('decodeUMC: ' + parts.length + ' bloques'); throw new Error('formato'); }
+  const sets = await Promise.all(parts.map(async (p) => bitsToSet(await unpack(b64ToBytes(p), 'gzip'))));
+  // con un solo bloque (variante sin repes): repes vacías
+  return { faltan: sets[0], repes: sets[1] ?? new Set<number>() };
 }
 
 // ---------- lectura de QR (Fv4.4.2) ----------
@@ -158,12 +181,14 @@ export function nativeDetector(): BarcodeDetectorLike | null {
 export async function readQR(cv: HTMLCanvasElement): Promise<string | null> {
   try {
     const hits = await nativeDetector()?.detect(cv);
-    if (hits?.[0]?.rawValue) return hits[0].rawValue;
-  } catch { /* API presente pero sin backend real: sigue jsQR */ }
+    if (hits?.[0]?.rawValue) { diag('readQR: BD hit @' + cv.width + 'x' + cv.height); return hits[0].rawValue; }
+  } catch (e) { diag('readQR: BD error ' + String(e).slice(0, 60)); }
   const jsQR = (await import('jsqr')).default;
   const cx = cv.getContext('2d', { willReadFrequently: true })!;
   const img = cx.getImageData(0, 0, cv.width, cv.height);
-  return jsQR(img.data, img.width, img.height)?.data || null;
+  const hit = jsQR(img.data, img.width, img.height)?.data || null;
+  diag('readQR: jsQR ' + (hit ? 'hit(' + hit.length + ')' : 'null') + ' @' + cv.width + 'x' + cv.height);
+  return hit;
 }
 // La escala buena depende del QR y del ruido (JPEG) y NO es monótona — medido:
 // un v30 en screenshot 1080×2340 solo se lee a escala nativa y un v40+JPEG solo
@@ -187,7 +212,10 @@ export async function readQRMultiScale(bmp: ImageBitmap): Promise<string | null>
 // autodetección de un QR ajeno
 export function detectFormat(data: string): 'native' | 'umc' | null {
   if (/v1\.[A-Za-z0-9_-]+/.test(data) && (data.includes('/s#') || data.startsWith('v1.') || data.startsWith('#v1.'))) return 'native';
-  if (data.startsWith(UMC_PREFIX_STR) || (data.includes(';H4sI') && data.includes('H4sI'))) return 'umc';
+  // Figuritas: basta un bloque gzip-b64; el prefijo puede ser cualquiera
+  // (e28b8b7e real, e7ab99e69591 de la spec, o ninguno) — decodeUMC valida
+  if (data.includes('H4sI')) return 'umc';
+  diag('detectFormat: no reconocido · len=' + data.length + ' · head=' + JSON.stringify(data.slice(0, 24)));
   return null;
 }
 

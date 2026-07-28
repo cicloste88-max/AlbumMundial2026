@@ -1172,8 +1172,9 @@ export default function AlbumBook() {
   // Fv4.4: procesar un QR ajeno leído → cruce + guardarlo en ESCANEADOS (4.4.3)
   const handleScanned = useCallback(async (data: string) => {
     try {
+      (await import('@/lib/share')).diag('scan: leído len=' + data.length + ' head=' + JSON.stringify(data.slice(0, 16)));
       const out = await computeScan(data);
-      if (!out) { avisar('QR no reconocido (ni Álbum26 ni Figuritas).'); return; }
+      if (!out) { avisar('QR leído, pero no es de Álbum26 ni de Figuritas.'); return; }
       const e: ScanSaved = { ts: Date.now(), fmt: out.fmt, alias: out.res.alias, data, nDoy: out.res.nDoy, nDa: out.res.nDa };
       // upsert por alias (re-escanear a la misma persona refresca su entrada)
       saveScans([e, ...scansRef.current.filter((x) => x.alias !== e.alias)].slice(0, 20));
@@ -1181,7 +1182,9 @@ export default function AlbumBook() {
       setScanning(false);
       avisar('Cruce con ' + out.res.alias + ' listo ✓ · guardado en ESCANEADOS', false);
     } catch (e) {
-      avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo leer ese QR. Prueba de nuevo con mejor luz o más cerca.');
+      try { (await import('@/lib/share')).diag('scan: ERROR ' + String(e).slice(0, 80)); } catch { /* chunk roto */ }
+      // el QR YA se leyó: si el decode falla no es un problema de luz/enfoque
+      avisar(esChunkRoto(e) ? MSG_RECARGA : 'QR leído, pero no se pudo interpretar. Detalle en diagnóstico.');
       setScanning(false);
     }
   }, [avisar, computeScan, saveScans]);
@@ -1241,7 +1244,9 @@ export default function AlbumBook() {
         if (!video || stop) { stream?.getTracks().forEach((t) => t.stop()); return; }
         video.srcObject = stream;
         await video.play();
-        const det = (await import('@/lib/share')).nativeDetector();
+        const share = await import('@/lib/share');
+        const det = share.nativeDetector();
+        share.diag('camara: BD=' + (det ? 'si' : 'no') + ' video=' + video.videoWidth + 'x' + video.videoHeight);
         let jsQR = det ? null : (await import('jsqr')).default;
         // Fv4.4.4: si el BarcodeDetector existe pero su backend está roto
         // (pasa en algunos Android), tras 10 fallos seguidos se degrada a jsQR
@@ -1268,6 +1273,7 @@ export default function AlbumBook() {
         };
         timer = window.setTimeout(tick, 60);
       } catch (e) {
+        try { (await import('@/lib/share')).diag('camara: ERROR ' + String(e).slice(0, 80)); } catch { /* chunk roto */ }
         avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo abrir la cámara. Usa "Subir imagen QR".');
         setScanning(false);
       }
@@ -1464,8 +1470,10 @@ export default function AlbumBook() {
           try {
             // Fv4.4.2: multi-escala — el downscale único a 1200 dejaba ilegible
             // el QR de un screenshot vertical (caso real: captura de Figuritas)
+            const share = await import('@/lib/share');
             const bmp = await createImageBitmap(file);
-            const hit = await (await import('@/lib/share')).readQRMultiScale(bmp);
+            share.diag('subida: ' + file.type + ' ' + Math.round(file.size / 1024) + 'KB → ' + bmp.width + 'x' + bmp.height);
+            const hit = await share.readQRMultiScale(bmp);
             if (hit) handleScanned(hit);
             else avisar('No se ha encontrado ningún QR en la imagen.');
           } catch (e) { avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo leer la imagen.'); }
