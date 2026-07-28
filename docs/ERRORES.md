@@ -201,6 +201,27 @@ Formato: **Síntoma → Causa raíz → Fix → Guardarraíl**.
   (v40-H tope 1273 bytes; M 2331) y 'H' solo en Figuritas (su spec, logo central).
 - **Guardarraíl**: el e2e de fv44 decodifica el PNG real del canvas (contexto B).
 
+### Tras un deploy, la cámara "no escanea" y subir imagen "da error" (gate, San)
+- **Síntoma**: los dos flujos de lectura rotos A LA VEZ justo después de
+  publicarse una versión nueva — con un lector que no había cambiado.
+- **Causa**: la app estaba ABIERTA durante el deploy. share/qrcode/jsqr cargan
+  LAZY con `import()`: el documento viejo pide chunks del build anterior, que
+  Vercel ya retiró → el import rechaza y el catch lo disfrazaba de error de
+  lectura ("No se pudo leer la imagen"). Las suites no lo ven porque siempre
+  corren frescas contra un único build.
+- **Fix (Fv4.4.4)**: (1) PRECARGA — al abrir la hoja COMPARTIR se importan los
+  tres módulos; con la hoja abierta, escanear/subir no vuelve a tocar la red
+  (module map). (2) Fallo de import detectado (`esChunkRoto`) → el toast dice
+  la verdad: "Hay una versión nueva de la app: recarga la página".
+  (3) La cámara además se degrada a jsQR si el BarcodeDetector nativo existe
+  pero falla repetidamente (backend roto en algunos Android).
+- **Guardarraíl**: checks (10) de fv44 — subir imagen con la red de chunks
+  CORTADA tras abrir la hoja (funciona) y chunks retirados ANTES de abrirla
+  (pide recargar).
+- **Lección**: en una PWA con deploys frecuentes, todo `import()` diferido es
+  un punto de fallo post-deploy: precargar al entrar en la pantalla que lo usa
+  y nunca reportar un chunk roto como error del dominio.
+
 ### Tras escanear "la aplicación no hace nada" (gate físico, reporte de San)
 - **Síntoma**: el QR ya se leía (Fv4.4.2) pero al usuario no le constaba: ni
   resultado visible ni forma de consultarlo después.

@@ -457,6 +457,14 @@ como paquetes posteriores del orquestador y sustituyen el camino F2/F3 del plan 
   "das N · te da M" de la fila es del momento del escaneo (orientativo). El ✕
   borra. Por dispositivo, sin backend (restricción de la fase); si San quiere
   sincronizarlo en la nube, es fase aparte. fv44 pasa a 31 checks (282 total).
+- **Fv4.4.4 — resiliencia a deploys con la app abierta (feedback del gate:
+  "la cámara no escanea y subir imagen da error")**: los import() lazy pedían
+  chunks del build anterior tras un deploy (retirados por Vercel) y el fallo
+  se disfrazaba de error de lectura. Ahora la hoja COMPARTIR PRECARGA
+  share/qrcode/jsqr al abrirse (con la hoja abierta no se toca la red), un
+  import roto muestra "Hay una versión nueva: recarga la página"
+  (`esChunkRoto`), y la cámara se degrada de BarcodeDetector a jsQR tras 10
+  fallos seguidos del backend nativo. fv44 pasa a 33 checks (284 total).
 - **Renombrado post-cierre (pedido por San)**: la app interop se llama
   **"Figuritas"** — todo lo visible al usuario (toggle FIGURITAS, caption,
   alias del cruce, "QR no reconocido") y la documentación usan ese nombre.

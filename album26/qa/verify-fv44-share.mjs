@@ -26,6 +26,11 @@
 //       (localStorage album26_scans, cap 20, upsert por alias); persiste tras
 //       recargar, el tap recalcula el cruce contra la colección ACTUAL y el ✕
 //       borra. Nace del gate físico: "¿dónde consulto lo escaneado?"
+//  (10) Fv4.4.4, deploy con la app abierta (gate: "la cámara no escanea y subir
+//       imagen da error"): share/qrcode/jsqr se PRECARGAN al abrir la hoja —
+//       con la red de chunks cortada la subida sigue funcionando; y si los
+//       chunks ya no existían al abrirla, el toast pide RECARGAR en vez de
+//       disfrazarse de error de lectura
 // Uso:  QA_URL=http://localhost:3000 node qa/verify-fv44-share.mjs
 import { chromium } from 'playwright-core';
 import QRCode from 'qrcode'; // dependencia de la app: genera el fixture denso (7b)
@@ -327,6 +332,31 @@ let qrUmcA = null; // PNG del QR Figuritas/UMC del estado A (para el mockup (7))
     stored: JSON.parse(localStorage.getItem('album26_scans') || '[]').length,
   }));
   ok('(9) el ✕ borra la entrada y persiste el borrado', afterDel.n === 1 && afterDel.stored === 1, JSON.stringify(afterDel));
+
+  // (10a) resiliencia a deploys: con la hoja abierta, los módulos ya están en
+  // memoria — cortar la red de chunks y subir imagen debe seguir funcionando
+  await p.waitForTimeout(4200); // deja morir cualquier toast previo
+  await p.route('**/_next/**', (r) => r.abort());
+  await p.setInputFiles('#share-file', { name: 'qrA.png', mimeType: 'image/png', buffer: qrPngA });
+  await p.waitForTimeout(1600);
+  const offline = await p.evaluate(() => document.getElementById('ab-toast')?.textContent || '(sin toast)');
+  ok('(10) precarga: subir imagen funciona SIN red de chunks (hoja ya abierta)',
+    offline.includes('listo ✓'), JSON.stringify(offline));
+  await ctx.close();
+}
+
+// ====== contexto D: los chunks del build se retiraron ANTES de abrir la hoja ======
+{
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, serviceWorkers: 'block' });
+  await mockAuth(ctx, URL, { rows: [] });
+  const p = await ctx.newPage();
+  await p.goto(URL, { waitUntil: 'networkidle' });
+  await p.waitForTimeout(700);
+  await p.route('**/_next/**', (r) => r.abort()); // deploy "por debajo": chunks huérfanos
+  await openShare(p);
+  const t = await p.evaluate(() => document.getElementById('ab-toast')?.textContent || '(sin toast)');
+  ok('(10) chunks retirados antes de abrir: el toast pide recargar (no error de lectura)',
+    t.includes('recarga la página'), JSON.stringify(t));
   await ctx.close();
 }
 

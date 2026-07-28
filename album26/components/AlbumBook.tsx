@@ -858,6 +858,12 @@ const loadScans = (): ScanSaved[] => {
 type ShareCtx = { fmt: ShareFmt; alias: string; scanning: boolean; scanRes: ScanRes | null; scans: ScanSaved[] };
 const escAttr = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// Fv4.4.4: si hubo un deploy con la app abierta, los import() lazy piden chunks
+// del build ANTERIOR que ya no existen — eso no es un fallo de lectura y el
+// mensaje debe pedir recargar (caso real del gate: "subir imagen da error")
+const esChunkRoto = (e: unknown) => /import|chunk|fetch|module|load/i.test(String(e));
+const MSG_RECARGA = 'Hay una versión nueva de la app: recarga la página para actualizar.';
+
 function shareBodyHTML(sh: ShareCtx): string {
   const rows = (l: string[]) => (l.length ? l.map((x) => '<div class="rg-row">' + x + '</div>').join('') : '<div class="cp-empty">—</div>');
   return '<div class="sh-fmt">'
@@ -1174,8 +1180,8 @@ export default function AlbumBook() {
       setScanRes(out.res);
       setScanning(false);
       avisar('Cruce con ' + out.res.alias + ' listo ✓ · guardado en ESCANEADOS', false);
-    } catch {
-      avisar('No se pudo leer ese QR. Prueba de nuevo con mejor luz o más cerca.');
+    } catch (e) {
+      avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo leer ese QR. Prueba de nuevo con mejor luz o más cerca.');
       setScanning(false);
     }
   }, [avisar, computeScan, saveScans]);
@@ -1195,6 +1201,10 @@ export default function AlbumBook() {
       try {
         const share = await import('@/lib/share');
         const QR = (await import('qrcode')).default;
+        // Fv4.4.4: precargar también el lector — con la hoja abierta, escanear
+        // o subir imagen ya no depende de la red (module map), aunque un deploy
+        // posterior retire los chunks de este build
+        import('jsqr').catch(() => { /* si falla, el flujo de lectura avisará */ });
         let payload: string;
         if (shareFmt === 'umc') {
           const sets = share.shareSetsOf(invsRef.current);
@@ -1209,7 +1219,7 @@ export default function AlbumBook() {
         // margin 4 = quiet zone estándar (con menos, los lectores reales fallan).
         // width 780 con CSS a 260px: nítido en @2x/@3x y decodificable desde PNG.
         if (cv && !dead) await QR.toCanvas(cv, payload, { errorCorrectionLevel: shareFmt === 'umc' ? 'H' : 'M', margin: 4, width: 780 });
-      } catch { if (!dead) avisar('No se pudo generar el QR.'); }
+      } catch (e) { if (!dead) avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo generar el QR.'); }
     })();
     return () => { dead = true; };
     // scanning/scanRes/scans: su cambio reconstruye el panel (innerHTML) y
@@ -1232,28 +1242,33 @@ export default function AlbumBook() {
         video.srcObject = stream;
         await video.play();
         const det = (await import('@/lib/share')).nativeDetector();
-        const jsQR = det ? null : (await import('jsqr')).default;
+        let jsQR = det ? null : (await import('jsqr')).default;
+        // Fv4.4.4: si el BarcodeDetector existe pero su backend está roto
+        // (pasa en algunos Android), tras 10 fallos seguidos se degrada a jsQR
+        let bdFails = 0;
         const cv = document.createElement('canvas');
         const cx = cv.getContext('2d', { willReadFrequently: true })!;
         const tick = async () => {
           if (stop) return;
           if (video.videoWidth) {
             let data: string | null = null;
-            if (det) {
-              try { data = (await det.detect(video))?.[0]?.rawValue || null; } catch { /* frame no listo */ }
+            const usaBD = det && bdFails < 10;
+            if (usaBD) {
+              try { data = (await det.detect(video))?.[0]?.rawValue || null; bdFails = 0; } catch { bdFails++; }
             } else {
+              jsQR = jsQR || (await import('jsqr')).default;
               cv.width = video.videoWidth; cv.height = video.videoHeight;
               cx.drawImage(video, 0, 0);
               const img = cx.getImageData(0, 0, cv.width, cv.height);
-              data = jsQR!(img.data, img.width, img.height)?.data || null;
+              data = jsQR(img.data, img.width, img.height)?.data || null;
             }
             if (data && !stop) { handleScanned(data); return; }
           }
-          timer = window.setTimeout(tick, det ? 160 : 60);
+          timer = window.setTimeout(tick, det && bdFails < 10 ? 160 : 60);
         };
         timer = window.setTimeout(tick, 60);
-      } catch {
-        avisar('No se pudo abrir la cámara. Usa "Subir imagen QR".');
+      } catch (e) {
+        avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo abrir la cámara. Usa "Subir imagen QR".');
         setScanning(false);
       }
     })();
@@ -1318,8 +1333,11 @@ export default function AlbumBook() {
       if (stext) {
         const kind = stext.dataset.shareText as 'faltan' | 'repes';
         (async () => {
-          const share = await import('@/lib/share');
-          const text = kind === 'faltan' ? share.textFaltan(invsRef.current) : share.textRepes(invsRef.current);
+          let text: string;
+          try {
+            const share = await import('@/lib/share');
+            text = kind === 'faltan' ? share.textFaltan(invsRef.current) : share.textRepes(invsRef.current);
+          } catch (e) { avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo preparar el texto.'); return; }
           try {
             if (navigator.share) { await navigator.share({ text }); return; }
             throw new Error('sin Web Share');
@@ -1346,7 +1364,7 @@ export default function AlbumBook() {
             const out = await computeScan(entry.data);
             if (out) setScanRes(out.res); // cruce FRESCO contra la colección actual
             else avisar('Ese QR guardado ya no se reconoce.');
-          } catch { avisar('No se pudo recalcular ese cruce.'); }
+          } catch (e) { avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo recalcular ese cruce.'); }
         })();
         return;
       }
@@ -1450,7 +1468,7 @@ export default function AlbumBook() {
             const hit = await (await import('@/lib/share')).readQRMultiScale(bmp);
             if (hit) handleScanned(hit);
             else avisar('No se ha encontrado ningún QR en la imagen.');
-          } catch { avisar('No se pudo leer la imagen.'); }
+          } catch (e) { avisar(esChunkRoto(e) ? MSG_RECARGA : 'No se pudo leer la imagen.'); }
         })();
       }
     };

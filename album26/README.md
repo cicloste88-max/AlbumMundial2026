@@ -24,7 +24,7 @@ npm run qa:ios     # fv38 · presupuesto iOS + safe-areas nativas (13)
 npm run qa:auth    # fv40 · auth + progreso en nube con mocks (19)
 npm run qa:collection # fv41 · panel Mi colección (22)
 npm run qa:especiales # fv42 · secciones especiales 00/FWC/CC (21)
-npm run qa:share   # fv44 · compartir: QR nativo + interop Figuritas + cruce (31)
+npm run qa:share   # fv44 · compartir: QR nativo + interop Figuritas + cruce (33)
 ```
 
 Las suites necesitan la app corriendo con `QA_AUTH_MOCK=1` (`QA_URL`, default

@@ -98,6 +98,9 @@ docs/                     BUILD-PLAN original · DECISIONES (log por fase) ·
   La `verificacion_ejemplo` de su spec no casa con sus propios bytes (DECISIONES § Fv4.4).
   Historial ESCANEADOS (Fv4.4.3): localStorage `album26_scans` (payload crudo, cap 20,
   upsert por alias); el tap recalcula el cruce contra la colección ACTUAL.
+  Deploys (Fv4.4.4): la hoja COMPARTIR PRECARGA share/qrcode/jsqr al abrirse y un
+  import() roto (chunks del build anterior retirados) avisa "recarga la página" —
+  nunca disfrazar un chunk roto de error de lectura.
 - **Banderas**: PNG por código FIFA en Supabase Storage (bucket público `flags/`),
   fallback `flagErr` → span `.noflag`. El sandbox de Claude Code NO llega a supabase.co
   (política de red): usar el MCP de Supabase para datos y no esperar ver banderas en
